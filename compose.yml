@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    volumes:
+      - .:/app:z
+      - cargo_cache:/usr/local/cargo/registry
+      - cargo_bin_cache:/usr/local/cargo/bin
+      - rustup_cache:/usr/local/rustup
+    working_dir: /app
+    environment:
+      - RUSTUP_HOME=/usr/local/rustup
+      - CARGO_HOME=/usr/local/cargo
+
+volumes:
+  cargo_cache:
+  cargo_bin_cache:
+  rustup_cache:

@@ -1,22 +1,26 @@
 # Rust Micro Front-End Development Commands
 # This justfile provides containerized development commands
 
+# Get current user and group IDs to avoid permission issues
+export UID := `id -u`
+export GID := `id -g`
+
 # Default recipe lists available commands
 default:
     @just --list
 
-# Core development workflow
+bash:
+    docker compose run -it --rm app bash
+
 build:
-    @echo "Building application in Docker container..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo build
+    docker compose run --rm app cargo build
 
 dev:
-    @echo "Starting development environment..."
-    # docker-compose up --build
+    docker compose run --rm --service-ports app cargo run
 
 test:
     @echo "Running test suite in containers..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo test
+    docker compose run --rm app cargo test
 
 test-unit:
     @echo "Running unit tests..."
@@ -25,6 +29,21 @@ test-unit:
 test-integration:
     @echo "Running integration tests with mock database..."
     # docker run --rm -v $(pwd):/workspace rust:1.75 cargo test --test integration
+
+# IDE tools
+
+# IDE support commands (runs once to configure local development)
+setup-ide:
+    rustup component add rust-analyzer rust-src
+
+# IDE support - generate build data for rust-analyzer
+build-data:
+    docker compose run --rm app cargo check --message-format=json > /dev/null
+
+# Complete IDE setup including build data
+setup-ide-complete:
+    rustup component add rust-analyzer rust-src
+    just build-data
 
 # Database operations
 migrate:
@@ -45,20 +64,16 @@ db-shell:
 
 # Code quality
 format:
-    @echo "Formatting Rust code..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo fmt
+    docker compose run --rm app cargo fmt
 
 lint:
-    @echo "Running Clippy linting..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo clippy
+    docker compose run --rm app cargo clippy
 
 check:
-    @echo "Checking compilation..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo check
+    docker compose run --rm app cargo check
 
 audit:
-    @echo "Running security audit..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo audit
+    # docker compose run --rm app cargo audit
 
 # Development utilities
 logs:
@@ -74,9 +89,24 @@ logs-nginx:
     # docker-compose logs -f nginx
 
 clean:
-    @echo "Cleaning build artifacts..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo clean
-    # docker-compose down --volumes
+    docker compose run --rm app cargo clean
+
+# Fix permission issues with target directory (run this if you get permission errors)
+fix-permissions:
+    sudo chown -R ${UID}:${GID} target/ || true
+
+# Initialize cargo and rustup cache volumes with correct permissions
+init-cargo-cache:
+    @echo "Initializing cargo and rustup caches with correct permissions..."
+    docker compose run --rm --user root app chown -R ${UID}:${GID} /usr/local/cargo || true
+    docker compose run --rm --user root app chown -R ${UID}:${GID} /usr/local/rustup || true
+    @echo "✅ Cargo and rustup caches initialized"
+
+# Nuclear clean - removes target directory entirely and recreates with correct permissions
+clean-nuclear:
+    sudo rm -rf target/
+    just init-cargo-cache
+    docker compose run --rm app cargo check > /dev/null
 
 reset:
     @echo "Nuclear reset - rebuilding everything..."
@@ -95,11 +125,11 @@ jwt-validate:
 # Performance and monitoring
 benchmark:
     @echo "Running performance benchmarks..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo bench
+    # docker run --rm -v $(pwd):/workspace --user ${UID}:${GID} rust:1.75 cargo bench
 
 profile:
     @echo "Profiling application performance..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo flamegraph
+    # docker run --rm -v $(pwd):/workspace --user ${UID}:${GID} rust:1.75 cargo flamegraph
 
 lighthouse:
     @echo "Running Lighthouse performance audit..."

@@ -1,0 +1,78 @@
+[package]
+name = "rust-micro-front-end"
+version = "0.1.0"
+edition = "2021"
+authors = ["Philippe Lafrance <phil.laf@gmail.com>"]
+description = "A high-performance, containerized micro web-application demonstrating modern web development constraints with Rust, Docker, and micro front-end architecture"
+license = "SEE LICENSE FILE"
+repository = "https://github.com/phillaf/rust-micro-front-end"
+keywords = ["web", "microservice", "frontend", "jwt", "performance"]
+categories = ["web-programming::http-server"]
+
+[dependencies]
+# Web Framework - Lightweight, async HTTP server
+axum = "0.8.4"
+
+# Async Runtime - Asynchronous runtime for Rust
+tokio = { version = "1.0", features = ["full"] }
+
+# JWT Library - RS256/ES256 signature validation
+jsonwebtoken = "9.0"
+
+# Database Layer - Async, compile-time checked SQL queries (no ORM)
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "mysql", "chrono", "uuid"] }
+
+# Templating Engine - Lightweight, Jinja2-compatible runtime templating
+minijinja = { version = "2.10.2", features = ["loader"] }
+
+# Serialization - JSON serialization/deserialization for APIs
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error Handling - Flexible error handling with context
+anyhow = "1.0"
+
+# Input Validation - Struct-based validation with custom rules
+validator = { version = "0.20.0", features = ["derive"] }
+
+# Correlation IDs - UUID generation for request tracing
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Metrics Collection - Standard metrics and monitoring
+prometheus = "0.14"
+
+# HTTP utilities
+tower = "0.5"
+tower-http = { version = "0.6.6", features = ["cors", "compression-gzip", "compression-br", "limit", "trace"] }
+
+# Date/Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Configuration - Environment variable parsing
+envconfig = "0.11.0"
+
+[dev-dependencies]
+# Testing Framework - Async testing utilities
+tokio-test = "0.4"
+
+# HTTP testing
+reqwest = { version = "0.12.20", features = ["json"] }
+
+# Test utilities
+tempfile = "3.0"
+
+[profile.release]
+# Optimize for performance and size
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+# Faster compilation in development
+debug = true
+opt-level = 0

@@ -1,0 +1,14 @@
+{
+  "rust-analyzer.cargo.buildScripts.enable": false,
+  "rust-analyzer.procMacro.enable": false,
+  "rust-analyzer.cargo.loadOutDirsFromCheck": false,
+  "rust-analyzer.checkOnSave.enable": true,
+  "rust-analyzer.checkOnSave.command": "check",
+  "rust-analyzer.diagnostics.enable": true,
+  "rust-analyzer.completion.autoimport.enable": true,
+  "rust-analyzer.assist.importGranularity": "module",
+  "rust-analyzer.cargo.buildScripts.overrideCommand": [
+    "just",
+    "build-data"
+  ]
+}

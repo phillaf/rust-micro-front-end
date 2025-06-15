@@ -19,6 +19,7 @@
 7. **Incremental folder structure approach**: Don't plan folder structure ahead of time. At every increment, review and include only what's necessary at that step, and flesh out the rest as we go. Always discuss folder organization decisions with the user before creating new directories.
 8. **No sprint terminology**: This project doesn't use sprint-based development. Use terms like "current phase", "next steps", or "current focus" instead.
 9. **Work plan maintenance**: Update `docs/WORK_PLAN.md` as tasks are completed, moving items from pending to in-progress to completed. Update progress percentages and change log entries to reflect current development status.
+10. **Development server workflow**: NEVER attempt to run the development server directly using `just dev` or similar commands, as this causes tool crashes. Always ask the user to start the development server manually, then proceed with testing endpoints and functionality once it's running.
 
 ### Architecture Enforcement (NON-NEGOTIABLE)
 The AI assistant must enforce these architectural decisions:
