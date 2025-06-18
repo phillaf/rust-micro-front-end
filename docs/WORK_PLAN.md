@@ -25,11 +25,13 @@
 - [x] Basic Health Check - Implement /health endpoint with comprehensive checks ✅ **COMPLETED**
 - [x] Docker Configuration - Create Dockerfile for Rust application ✅ **COMPLETED**
 - [x] Docker Compose Configuration - Create compose.yml with app service and volume caching ✅ **COMPLETED**
+- [x] Mock Database Implementation - Complete adapter pattern with validation ✅ **COMPLETED**
+- [x] API Endpoints - GET/POST /api/username endpoints working ✅ **COMPLETED**
 
 #### 📋 Pending Tasks - Phase 1
 - [ ] **Basic Rust Project Structure**
   - [x] Create `src/main.rs` with basic axum server
-  - [ ] Create `src/database/mod.rs` with adapter pattern (when needed)
+  - [x] Create `src/database/mod.rs` with adapter pattern ✅ **COMPLETED**
   - [ ] Create basic project modules (handlers, middleware, utils) (when needed)
 - [ ] **Docker Configuration**
   - [x] Create `Dockerfile` for Rust application  
@@ -38,8 +40,8 @@
   - [ ] Add nginx and MySQL services to compose.yml (when needed)
 - [ ] **Database Setup**
   - [ ] Create initial migration for users table
-  - [ ] Implement mock database adapter for development
-  - [ ] Implement MySQL database adapter
+  - [x] Implement mock database adapter for development ✅ **COMPLETED**
+  - [ ] Implement MySQL database adapter (placeholder created)
 - [ ] **Basic Authentication**
   - [ ] JWT middleware for token validation
   - [ ] Username claim extraction and validation

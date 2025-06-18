@@ -16,6 +16,9 @@ axum = "0.8.4"
 # Async Runtime - Asynchronous runtime for Rust
 tokio = { version = "1.0", features = ["full"] }
 
+# Async Trait - Enables async functions in traits
+async-trait = "0.1"
+
 # JWT Library - RS256/ES256 signature validation
 jsonwebtoken = "9.0"
 

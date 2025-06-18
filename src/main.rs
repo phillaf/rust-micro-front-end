@@ -1,17 +1,21 @@
 use anyhow::Result;
 use axum::{
-    extract::Query,
+    extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
-use std::env;
+use std::{env, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use uuid::Uuid;
+
+mod database;
+
+use database::{create_database_adapter, validate_display_name, validate_username, UserDatabase};
 
 #[derive(Debug, Serialize)]
 struct HealthResponse {
@@ -19,6 +23,7 @@ struct HealthResponse {
     version: String,
     timestamp: chrono::DateTime<chrono::Utc>,
     request_id: String,
+    database_status: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,12 +55,16 @@ async fn main() -> Result<()> {
 
     // Validate required environment variables
     validate_environment()?;
+    
+    // Initialize database adapter
+    let database = create_database_adapter().await?;
+    info!("📊 Database adapter initialized successfully");
 
     info!("🚀 Starting Rust Micro Front-End Application");
     info!("📊 Log level: {}", log_level);
 
     // Build the application routes
-    let app = create_app();
+    let app = create_app(database);
 
     // Determine the port to bind to
     let port = env::var("PORT")
@@ -78,23 +87,39 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn create_app() -> Router {
+fn create_app(database: Arc<dyn UserDatabase>) -> Router {
     Router::new()
         .route("/health", get(health_check))
+        .route("/api/username/{username}", get(get_username_api))
+        .route("/api/username", post(update_username_api))
         .layer(TraceLayer::new_for_http())
+        .with_state(database)
 }
 
-async fn health_check(Query(params): Query<HealthQuery>) -> Result<Json<HealthResponse>, StatusCode> {
+async fn health_check(
+    axum::extract::State(database): axum::extract::State<Arc<dyn UserDatabase>>,
+    Query(params): Query<HealthQuery>
+) -> Result<Json<HealthResponse>, StatusCode> {
     let request_id = params.request_id
         .unwrap_or_else(|| Uuid::new_v4().to_string());
 
     info!("🏥 Health check requested (request_id: {})", request_id);
+
+    // Check database health
+    let database_status = match database.health_check().await {
+        Ok(status) => status,
+        Err(e) => {
+            tracing::error!("❌ Database health check failed: {}", e);
+            format!("database_error: {}", e)
+        }
+    };
 
     let response = HealthResponse {
         status: "healthy".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         timestamp: chrono::Utc::now(),
         request_id,
+        database_status,
     };
 
     Ok(Json(response))
@@ -191,6 +216,84 @@ fn validate_environment() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct UsernameResponse {
+    username: String,
+    display_name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateUsernameRequest {
+    display_name: String,
+}
+
+/// GET /api/username/{username} - Get display name as JSON (public endpoint)
+async fn get_username_api(
+    State(database): State<Arc<dyn UserDatabase>>,
+    Path(username): Path<String>,
+) -> Result<Json<UsernameResponse>, StatusCode> {
+    // Validate username format
+    if let Err(e) = validate_username(&username) {
+        tracing::warn!("❌ Invalid username format '{}': {}", username, e);
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Get user from database
+    match database.get_user(&username).await {
+        Ok(Some(user)) => {
+            tracing::info!("✅ Retrieved user data for '{}'", username);
+            Ok(Json(UsernameResponse {
+                username: user.username,
+                display_name: user.display_name,
+            }))
+        }
+        Ok(None) => {
+            tracing::info!("❌ User '{}' not found", username);
+            Err(StatusCode::NOT_FOUND)
+        }
+        Err(e) => {
+            tracing::error!("❌ Database error retrieving user '{}': {}", username, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+/// POST /api/username - Update display name (JWT protected - placeholder for now)
+async fn update_username_api(
+    State(database): State<Arc<dyn UserDatabase>>,
+    Json(request): Json<UpdateUsernameRequest>,
+) -> Result<Json<UsernameResponse>, StatusCode> {
+    // TODO: Extract username from JWT token - for now using hardcoded username
+    let username = "testuser"; // This will be replaced with JWT extraction
+    
+    // Validate display name
+    if let Err(e) = validate_display_name(&request.display_name) {
+        tracing::warn!("❌ Invalid display name '{}': {}", request.display_name, e);
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Validate username format
+    if let Err(e) = validate_username(username) {
+        tracing::error!("❌ Invalid username from token '{}': {}", username, e);
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    // Update user in database
+    match database.update_user_display_name(username, &request.display_name).await {
+        Ok(()) => {
+            tracing::info!("✅ Updated display name for '{}' to '{}'", username, request.display_name);
+            Ok(Json(UsernameResponse {
+                username: username.to_string(),
+                display_name: request.display_name,
+            }))
+        }
+        Err(e) => {
+            tracing::error!("❌ Database error updating user '{}': {}", username, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 #[cfg(test)]
