@@ -16,7 +16,7 @@ build:
     docker compose run --rm app cargo build
 
 dev:
-    docker compose run --rm --service-ports app cargo run
+    docker compose run --rm --service-ports app cargo run --bin rust-micro-front-end
 
 test:
     @echo "Running test suite in containers..."
@@ -27,8 +27,8 @@ test-unit:
     # docker run --rm -v $(pwd):/workspace rust:1.75 cargo test --lib
 
 test-integration:
-    @echo "Running integration tests with mock database..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo test --test integration
+    @echo "Running integration tests..."
+    ./tests/integration/mysql_integration_test.sh
 
 # IDE tools
 
@@ -46,9 +46,16 @@ setup-ide-complete:
     just build-data
 
 # Database operations
+db-up:
+    @echo "Starting MySQL database..."
+    docker compose up -d mysql
+    @echo "Waiting for MySQL to be ready..."
+    docker compose exec mysql bash -c 'until mysqladmin ping -h localhost --silent; do sleep 1; done'
+    @echo "MySQL is ready!"
+
 migrate:
     @echo "Running database migrations..."
-    # docker-compose exec app sqlx migrate run
+    docker compose run --rm app cargo run --bin migrate
 
 migrate-reset:
     @echo "Resetting database and running all migrations..."
@@ -60,7 +67,7 @@ seed:
 
 db-shell:
     @echo "Accessing database shell..."
-    # docker-compose exec mysql mysql -u app_user -p micro_frontend
+    docker compose exec mysql bash -c 'mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
 
 # Code quality
 format:

@@ -27,6 +27,7 @@
 - [x] Docker Compose Configuration - Create compose.yml with app service and volume caching ✅ **COMPLETED**
 - [x] Mock Database Implementation - Complete adapter pattern with validation ✅ **COMPLETED**
 - [x] API Endpoints - GET/POST /api/username endpoints working ✅ **COMPLETED**
+- [x] Code Organization - Extracted endpoints, config, and router into separate modules ✅ **COMPLETED**
 
 #### 📋 Pending Tasks - Phase 1
 - [ ] **Basic Rust Project Structure**
@@ -39,8 +40,9 @@
   - [ ] Create nginx configuration for reverse proxy (when needed)
   - [ ] Add nginx and MySQL services to compose.yml (when needed)
 - [ ] **Database Setup**
-  - [ ] Create initial migration for users table
+  - [x] Create initial migration for users table ✅ **COMPLETED**
   - [x] Implement mock database adapter for development ✅ **COMPLETED**
+  - [x] Create migration runner utility ✅ **COMPLETED**
   - [ ] Implement MySQL database adapter (placeholder created)
 - [ ] **Basic Authentication**
   - [ ] JWT middleware for token validation

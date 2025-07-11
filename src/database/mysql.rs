@@ -13,14 +13,14 @@ impl MySqlUserDatabase {
             "mysql://{}:{}@{}:{}/{}",
             std::env::var("DATABASE_USERNAME").unwrap_or_else(|_| "app_user".to_string()),
             std::env::var("DATABASE_PASSWORD").unwrap_or_else(|_| "secure_password".to_string()),
-            std::env::var("DATABASE_HOST").unwrap_or_else(|_| "localhost".to_string()),
+            std::env::var("DATABASE_HOST").unwrap_or_else(|_| "mysql".to_string()),
             std::env::var("DATABASE_PORT").unwrap_or_else(|_| "3306".to_string()),
             std::env::var("DATABASE_NAME").unwrap_or_else(|_| "micro_frontend".to_string()),
         );
 
         let pool = MySqlPool::connect(&database_url).await?;
         
-        tracing::info!("🐬 Connected to MySQL database");
+        tracing::info!("Connected to MySQL database");
         
         Ok(Self { pool })
     }
@@ -58,7 +58,7 @@ impl UserDatabase for MySqlUserDatabase {
         .execute(&self.pool)
         .await?;
 
-        tracing::info!("📝 Updated display name for user '{}' in MySQL", username);
+        tracing::info!("Updated display name for user '{}' in MySQL", username);
         Ok(())
     }
     

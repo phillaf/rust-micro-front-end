@@ -12,11 +12,27 @@ services:
       - cargo_bin_cache:/usr/local/cargo/bin
       - rustup_cache:/usr/local/rustup
     working_dir: /app
-    environment:
-      - RUSTUP_HOME=/usr/local/rustup
-      - CARGO_HOME=/usr/local/cargo
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    env_file:
+      - .env
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 5s
+      start_period: 30s
 
 volumes:
   cargo_cache:
   cargo_bin_cache:
   rustup_cache:
+  mysql_data:

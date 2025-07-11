@@ -23,7 +23,7 @@ async-trait = "0.1"
 jsonwebtoken = "9.0"
 
 # Database Layer - Async, compile-time checked SQL queries (no ORM)
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "mysql", "chrono", "uuid"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "mysql", "chrono", "uuid", "migrate"] }
 
 # Templating Engine - Lightweight, Jinja2-compatible runtime templating
 minijinja = { version = "2.10.2", features = ["loader"] }
