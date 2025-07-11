@@ -5,18 +5,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-/// Mock database implementation for development and testing
-/// Uses in-memory HashMap with RwLock for thread-safe access
 pub struct MockUserDatabase {
     users: Arc<RwLock<HashMap<String, User>>>,
 }
 
 impl MockUserDatabase {
-    /// Create a new mock database with some sample data
     pub fn new() -> Self {
         let mut users = HashMap::new();
         
-        // Add some sample users for development
         users.insert("admin".to_string(), User {
             username: "admin".to_string(),
             display_name: "Administrator".to_string(),
@@ -39,17 +35,22 @@ impl MockUserDatabase {
         }
     }
     
-    /// Create an empty mock database (useful for testing)
+    #[allow(dead_code)]
     pub fn new_empty() -> Self {
         Self {
             users: Arc::new(RwLock::new(HashMap::new())),
         }
     }
     
-    /// Get current user count (for testing/debugging)
     pub async fn user_count(&self) -> usize {
         let users = self.users.read().await;
         users.len()
+    }
+    
+    #[allow(dead_code)]
+    async fn user_exists(&self, username: &str) -> Result<bool> {
+        let users = self.users.read().await;
+        Ok(users.contains_key(username))
     }
 }
 
@@ -65,12 +66,10 @@ impl UserDatabase for MockUserDatabase {
         
         match users.get_mut(username) {
             Some(user) => {
-                // Update existing user
                 user.display_name = display_name.to_string();
                 tracing::info!("📝 Updated display name for user '{}': '{}'", username, display_name);
             }
             None => {
-                // Create new user
                 let user = User {
                     username: username.to_string(),
                     display_name: display_name.to_string(),
@@ -81,11 +80,6 @@ impl UserDatabase for MockUserDatabase {
         }
         
         Ok(())
-    }
-    
-    async fn user_exists(&self, username: &str) -> Result<bool> {
-        let users = self.users.read().await;
-        Ok(users.contains_key(username))
     }
     
     async fn health_check(&self) -> Result<String> {
@@ -121,7 +115,6 @@ mod tests {
     async fn test_update_existing_user() {
         let db = MockUserDatabase::new();
         
-        // Update existing user
         db.update_user_display_name("admin", "Super Admin").await.unwrap();
         
         let user = db.get_user("admin").await.unwrap().unwrap();

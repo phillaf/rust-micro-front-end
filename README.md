@@ -2,11 +2,11 @@
 
 A high-performance, containerized micro web-application demonstrating modern web development constraints with Rust, Docker, and micro front-end architecture.
 
-## 🎯 Project Overview
+## Project Overview
 
 This project showcases a minimum viable prototype for micro web-applications that can be composed into larger ecosystems. It features two web components (CMS and Display) for managing user display names with JWT authentication, server-side rendering, and optimal performance.
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -19,7 +19,7 @@ This project showcases a minimum viable prototype for micro web-applications tha
 
 For detailed architecture decisions, technology stack rationale, and database schema, see [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md).
 
-## 🚀 Getting Started
+## Getting Started
 
 This project uses a fully containerized development environment. You don't need to install Rust, MySQL, or any development tools locally.
 
@@ -71,7 +71,7 @@ Key commands include:
 - `just format` - Format code
 - `just lint` - Run linting
 
-## 🔧 Development Workflow
+## Development Workflow
 
 ### Making Changes
 
@@ -117,11 +117,11 @@ The application supports flexible configuration through granular environment var
 - **Aggressive caching** - nginx and application-level caching
 - **Modern HTTP features** - HTTP/3, streaming, multiplexing support
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 For detailed technology stack information, selection rationale, and dependency specifications, see [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md).
 
-## 🧪 Testing
+## Testing
 
 The project includes comprehensive testing with containerized test environments:
 
@@ -133,7 +133,7 @@ The project includes comprehensive testing with containerized test environments:
 
 All tests run in isolated Docker containers with mock databases for fast iteration.
 
-## 📄 License
+## License
 
 This project is dual-licensed:
 - **Non-commercial use**: Free under custom license terms
@@ -141,7 +141,7 @@ This project is dual-licensed:
 
 See [LICENSE](LICENSE) for complete terms.
 
-## 🤝 Contributing
+## Contributing
 
 This project uses a **fully containerized development environment**. You don't need to install Rust, MySQL, cargo, rustfmt, clippy, or any other development tools on your local machine. Everything runs inside Docker containers.
 

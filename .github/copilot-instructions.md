@@ -40,6 +40,14 @@ The AI assistant must enforce these architectural decisions:
 - **Performance target**: Lighthouse 100/100 score
 - **Testing philosophy**: Comprehensive unit, integration, and e2e tests using containerized test runner
 - **Error handling**: Graceful degradation with structured logging
+- **Clean output**: Avoid emojis and icons in logs, documentation, and code unless they provide genuine functional value
+- **High-value comments only**: Avoid low-value comments that explain self-explanatory code. Add comments only when code logic is complex, non-obvious, or requires business context
+
+### Output Formatting Standards
+- **No decorative icons**: Avoid emojis and Unicode symbols in logs, documentation, error messages, and code comments
+- **Professional presentation**: Keep output clean and focused on content rather than visual decoration
+- **Functional icons only**: Use symbols only when they provide genuine functional value (e.g., distinguishing error types where color is unavailable)
+- **Consistent formatting**: Maintain clean, parseable output for both human and programmatic consumption
 
 ## AI Assistant Behavioral Guidelines
 

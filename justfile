@@ -100,7 +100,7 @@ init-cargo-cache:
     @echo "Initializing cargo and rustup caches with correct permissions..."
     docker compose run --rm --user root app chown -R ${UID}:${GID} /usr/local/cargo || true
     docker compose run --rm --user root app chown -R ${UID}:${GID} /usr/local/rustup || true
-    @echo "✅ Cargo and rustup caches initialized"
+    @echo "Cargo and rustup caches initialized"
 
 # Nuclear clean - removes target directory entirely and recreates with correct permissions
 clean-nuclear:

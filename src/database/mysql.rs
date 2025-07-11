@@ -3,14 +3,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use sqlx::{MySqlPool, Row};
 
-/// MySQL database implementation
-/// Uses sqlx for async, compile-time checked SQL queries
 pub struct MySqlUserDatabase {
     pool: MySqlPool,
 }
 
 impl MySqlUserDatabase {
-    /// Create a new MySQL database connection
     pub async fn new() -> Result<Self> {
         let database_url = format!(
             "mysql://{}:{}@{}:{}/{}",
@@ -65,15 +62,6 @@ impl UserDatabase for MySqlUserDatabase {
         Ok(())
     }
     
-    async fn user_exists(&self, username: &str) -> Result<bool> {
-        let row = sqlx::query("SELECT 1 FROM users WHERE username = ?")
-            .bind(username)
-            .fetch_optional(&self.pool)
-            .await?;
-            
-        Ok(row.is_some())
-    }
-    
     async fn health_check(&self) -> Result<String> {
         let row = sqlx::query("SELECT COUNT(*) as user_count FROM users")
             .fetch_one(&self.pool)
@@ -83,6 +71,3 @@ impl UserDatabase for MySqlUserDatabase {
         Ok(format!("mysql_db_healthy_with_{}_users", user_count))
     }
 }
-
-// Note: MySQL implementation will be completed in Phase 2
-// This placeholder ensures the code compiles and the adapter pattern works
