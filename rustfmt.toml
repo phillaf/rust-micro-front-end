@@ -1,0 +1,23 @@
+# Rustfmt configuration for rust-micro-front-end
+# This file configures code formatting behavior
+
+# Allow longer lines to prevent unnecessary line breaks
+max_width = 120
+
+# When function parameters need to be split, put each on its own line
+fn_params_layout = "Tall"
+
+# Don't force macro arguments onto separate lines  
+fn_call_width = 80
+
+# Keep single-line expressions on single lines when possible
+single_line_if_else_max_width = 80
+
+# Don't break chains unnecessarily
+chain_width = 80
+
+# Allow struct literals to stay on one line
+struct_lit_width = 40
+
+# Don't force array elements onto separate lines
+array_width = 80

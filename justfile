@@ -20,6 +20,10 @@ dev:
 
 test:
     @echo "Running test suite in containers..."
+    docker compose run --rm app cargo test -- --test-threads=1
+
+test-parallel:
+    @echo "Running test suite in containers (parallel)..."
     docker compose run --rm app cargo test
 
 test-unit:

@@ -1,0 +1,11 @@
+# Clippy configuration for rust-micro-front-end
+# This file configures which clippy lints to enable/disable
+
+# Allow mixed uninlined format args to preserve intentional code formatting
+# This prevents clippy from suggesting to change format!("{}", var) to format!("{var}")
+# when it would break carefully aligned code patterns
+allow-mixed-uninlined-format-args = true
+
+# Don't enforce line length limits that would break single-line formatting
+# This prevents clippy from suggesting to break up lines that are intentionally compact
+too-many-lines-threshold = 200

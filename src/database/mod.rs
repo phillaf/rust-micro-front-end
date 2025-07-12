@@ -20,9 +20,8 @@ pub trait UserDatabase: Send + Sync {
 }
 
 pub async fn create_database_adapter() -> Result<Arc<dyn UserDatabase>> {
-    let adapter_type = std::env::var("DATABASE_ADAPTER")
-        .unwrap_or_else(|_| "mock".to_string());
-    
+    let adapter_type = std::env::var("DATABASE_ADAPTER").unwrap_or_else(|_| "mock".to_string());
+
     match adapter_type.as_str() {
         "mock" => {
             tracing::info!("Using mock database adapter");
@@ -43,16 +42,16 @@ pub fn validate_display_name(display_name: &str) -> Result<()> {
     if display_name.is_empty() {
         anyhow::bail!("Display name cannot be empty");
     }
-    
+
     if display_name.len() > 100 {
         anyhow::bail!("Display name cannot be longer than 100 characters");
     }
-    
+
     // Additional validation could be added here:
     // - Check for invalid characters
     // - Check for profanity
     // - Check for specific business rules
-    
+
     Ok(())
 }
 
@@ -60,16 +59,16 @@ pub fn validate_username(username: &str) -> Result<()> {
     if username.is_empty() {
         anyhow::bail!("Username cannot be empty");
     }
-    
+
     if username.len() > 50 {
         anyhow::bail!("Username cannot be longer than 50 characters");
     }
-    
+
     // Basic alphanumeric + underscore validation
     if !username.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
         anyhow::bail!("Username can only contain letters, numbers, underscores, and hyphens");
     }
-    
+
     Ok(())
 }
 

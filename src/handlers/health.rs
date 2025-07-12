@@ -1,8 +1,4 @@
-use axum::{
-    extract::Query,
-    http::StatusCode,
-    response::Json,
-};
+use axum::{extract::Query, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
 use std::{env, sync::Arc};
 use tracing::info;
@@ -26,10 +22,9 @@ pub struct HealthQuery {
 
 pub async fn health_check(
     axum::extract::State(database): axum::extract::State<Arc<dyn UserDatabase>>,
-    Query(params): Query<HealthQuery>
+    Query(params): Query<HealthQuery>,
 ) -> Result<Json<HealthResponse>, StatusCode> {
-    let request_id = params.request_id
-        .unwrap_or_else(|| Uuid::new_v4().to_string());
+    let request_id = params.request_id.unwrap_or_else(|| Uuid::new_v4().to_string());
 
     info!("Health check requested (request_id: {})", request_id);
 
@@ -37,7 +32,7 @@ pub async fn health_check(
         Ok(status) => status,
         Err(e) => {
             tracing::error!("Database health check failed: {}", e);
-            format!("database_error: {}", e)
+            format!("database_error: {e}")
         }
     };
 

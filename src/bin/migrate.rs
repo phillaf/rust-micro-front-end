@@ -13,25 +13,25 @@ pub async fn run_migrations() -> Result<()> {
     );
 
     let pool = MySqlPool::connect(&database_url).await?;
-    
+
     tracing::info!("Running database migrations...");
-    
+
     // Run migrations using sqlx migrate
     sqlx::migrate!("./migrations").run(&pool).await?;
-    
+
     tracing::info!("Database migrations completed successfully");
-    
+
     // Close the pool to ensure clean shutdown
     pool.close().await;
-    
+
     Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
-    
+
     run_migrations().await?;
-    
+
     Ok(())
 }

@@ -1,5 +1,5 @@
 use axum::{
-    extract::State,
+    extract::{Extension, State},
     http::StatusCode,
     response::Json,
 };
@@ -16,27 +16,27 @@ pub struct UpdateUsernameRequest {
 
 pub async fn update_username_api(
     State(database): State<Arc<dyn UserDatabase>>,
-    Json(request): Json<UpdateUsernameRequest>,
+    Extension(username): Extension<String>,
+    Json(payload): Json<UpdateUsernameRequest>,
 ) -> Result<Json<UsernameResponse>, StatusCode> {
-    // TODO: Extract username from JWT token - for now using hardcoded username
-    let username = "testuser";
-    
-    if let Err(e) = validate_display_name(&request.display_name) {
-        tracing::warn!("Invalid display name '{}': {}", request.display_name, e);
+    // Username is now extracted directly from the JWT token via the Extension extractor
+
+    if let Err(e) = validate_display_name(&payload.display_name) {
+        tracing::warn!("Invalid display name '{}': {}", payload.display_name, e);
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    if let Err(e) = validate_username(username) {
+    if let Err(e) = validate_username(&username) {
         tracing::error!("Invalid username from token '{}': {}", username, e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
-    match database.update_user_display_name(username, &request.display_name).await {
+    match database.update_user_display_name(&username, &payload.display_name).await {
         Ok(()) => {
-            tracing::info!("Updated display name for '{}' to '{}'", username, request.display_name);
+            tracing::info!("Updated display name for '{}' to '{}'", username, payload.display_name);
             Ok(Json(UsernameResponse {
                 username: username.to_string(),
-                display_name: request.display_name,
+                display_name: payload.display_name,
             }))
         }
         Err(e) => {

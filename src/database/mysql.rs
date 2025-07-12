@@ -19,9 +19,9 @@ impl MySqlUserDatabase {
         );
 
         let pool = MySqlPool::connect(&database_url).await?;
-        
+
         tracing::info!("Connected to MySQL database");
-        
+
         Ok(Self { pool })
     }
 }
@@ -29,12 +29,10 @@ impl MySqlUserDatabase {
 #[async_trait]
 impl UserDatabase for MySqlUserDatabase {
     async fn get_user(&self, username: &str) -> Result<Option<User>> {
-        let row = sqlx::query(
-            "SELECT username, display_name FROM users WHERE username = ?"
-        )
-        .bind(username)
-        .fetch_optional(&self.pool)
-        .await?;
+        let row = sqlx::query("SELECT username, display_name FROM users WHERE username = ?")
+            .bind(username)
+            .fetch_optional(&self.pool)
+            .await?;
 
         match row {
             Some(row) => {
@@ -47,11 +45,11 @@ impl UserDatabase for MySqlUserDatabase {
             None => Ok(None),
         }
     }
-    
+
     async fn update_user_display_name(&self, username: &str, display_name: &str) -> Result<()> {
         sqlx::query(
             "INSERT INTO users (username, display_name) VALUES (?, ?) 
-             ON DUPLICATE KEY UPDATE display_name = VALUES(display_name)"
+             ON DUPLICATE KEY UPDATE display_name = VALUES(display_name)",
         )
         .bind(username)
         .bind(display_name)
@@ -61,13 +59,13 @@ impl UserDatabase for MySqlUserDatabase {
         tracing::info!("Updated display name for user '{}' in MySQL", username);
         Ok(())
     }
-    
+
     async fn health_check(&self) -> Result<String> {
         let row = sqlx::query("SELECT COUNT(*) as user_count FROM users")
             .fetch_one(&self.pool)
             .await?;
-            
+
         let user_count: i64 = row.get("user_count");
-        Ok(format!("mysql_db_healthy_with_{}_users", user_count))
+        Ok(format!("mysql_db_healthy_with_{user_count}_users"))
     }
 }

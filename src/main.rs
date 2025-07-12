@@ -6,6 +6,7 @@ use tracing::info;
 mod config;
 mod database;
 mod handlers;
+mod middleware;
 mod router;
 
 use config::validate_environment;
@@ -15,9 +16,9 @@ use router::create_app;
 #[tokio::main]
 async fn main() -> Result<()> {
     validate_environment()?;
-    
+
     let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
-    
+
     let subscriber = tracing_subscriber::fmt()
         .with_max_level(match log_level.as_str() {
             "trace" => tracing::Level::TRACE,
@@ -26,13 +27,13 @@ async fn main() -> Result<()> {
             "warn" => tracing::Level::WARN,
             "error" => tracing::Level::ERROR,
             _ => {
-                eprintln!("Invalid LOG_LEVEL: {}. Using 'info' as default.", log_level);
+                eprintln!("Invalid LOG_LEVEL: {log_level}. Using 'info' as default.");
                 tracing::Level::INFO
             }
         })
         .with_target(false)
         .finish();
-    
+
     tracing::subscriber::set_global_default(subscriber)?;
 
     let database = create_database_adapter().await?;
@@ -47,12 +48,12 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|_| "80".to_string())
         .parse::<u16>()
         .unwrap_or(80);
-    
-    let bind_address = format!("0.0.0.0:{}", port);
+
+    let bind_address = format!("0.0.0.0:{port}");
     info!("Server binding to {}", bind_address);
 
     let listener = TcpListener::bind(&bind_address).await?;
-    
+
     info!("Server started successfully on http://{}", bind_address);
     info!("Health check available at http://{}/health", bind_address);
 
