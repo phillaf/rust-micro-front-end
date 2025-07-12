@@ -7,14 +7,14 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 use crate::database::{validate_display_name, validate_username, UserDatabase};
-use crate::handlers::username::UsernameResponse;
+use crate::handlers::get_api_username::UsernameResponse;
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateUsernameRequest {
     pub display_name: String,
 }
 
-pub async fn update_username_api(
+pub async fn post_api_username(
     State(database): State<Arc<dyn UserDatabase>>,
     Extension(username): Extension<String>,
     Json(payload): Json<UpdateUsernameRequest>,

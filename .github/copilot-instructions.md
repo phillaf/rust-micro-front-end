@@ -20,6 +20,8 @@
 8. **No sprint terminology**: This project doesn't use sprint-based development. Use terms like "current phase", "next steps", or "current focus" instead.
 9. **Work plan maintenance**: Update `docs/WORK_PLAN.md` as tasks are completed, moving items from pending to in-progress to completed. Update progress percentages and change log entries to reflect current development status.
 10. **Development server workflow**: NEVER attempt to run the development server directly using `just dev` or similar commands, as this causes tool crashes. Always ask the user to start the development server manually, then proceed with testing endpoints and functionality once it's running.
+11. **Clean up debug artifacts**: ALWAYS remove any temporary files, debug scripts, or testing artifacts created during development once they are no longer needed. Never leave debug files (like debug_*.sh, *.py test scripts, tmp files) in the workspace after completing a task.
+12. **Git read-only access**: NEVER use git commands that modify the repository state (commit, reset, add, rm, etc.). Only use git for reading information (status, log, diff, show). All git modifications should be done by the user.
 
 ### Architecture Enforcement (NON-NEGOTIABLE)
 The AI assistant must enforce these architectural decisions:
@@ -42,6 +44,7 @@ The AI assistant must enforce these architectural decisions:
 - **Error handling**: Graceful degradation with structured logging
 - **Clean output**: Avoid emojis and icons in logs, documentation, and code unless they provide genuine functional value
 - **High-value comments only**: Avoid low-value comments that explain self-explanatory code. Add comments only when code logic is complex, non-obvious, or requires business context
+- **No trivial commenting**: Never add comments that simply restate what the code obviously does (e.g., "// Create a variable", "// Call function", "// Return result"). Comments should add meaningful context, explain business logic, or clarify non-obvious implementation decisions
 
 ### Output Formatting Standards
 - **No decorative icons**: Avoid emojis and Unicode symbols in logs, documentation, error messages, and code comments

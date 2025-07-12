@@ -34,6 +34,10 @@ test-integration:
     @echo "Running integration tests..."
     ./tests/integration/mysql_integration_test.sh
 
+test-jwt:
+    @echo "Running JWT authentication tests..."
+    ./tests/integration/jwt_test.sh
+
 # IDE tools
 
 # IDE support commands (runs once to configure local development)

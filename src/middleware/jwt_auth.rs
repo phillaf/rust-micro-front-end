@@ -2,7 +2,7 @@
 
 use axum::{
     extract::Request,
-    http::{header::AUTHORIZATION, StatusCode},
+    http::{header::AUTHORIZATION, header::COOKIE, StatusCode},
     middleware::Next,
     response::Response,
 };
@@ -73,20 +73,13 @@ impl JwtConfig {
 }
 
 pub async fn jwt_auth_middleware(mut request: Request, next: Next) -> Result<Response, StatusCode> {
-    // Extract Authorization header
-    let auth_header = request
-        .headers()
-        .get(AUTHORIZATION)
-        .and_then(|header| header.to_str().ok())
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    // Check for Bearer token format
-    let token = auth_header.strip_prefix("Bearer ").ok_or(StatusCode::UNAUTHORIZED)?;
+    // Try to extract JWT token from multiple sources
+    let token = extract_jwt_token(&request).ok_or(StatusCode::UNAUTHORIZED)?;
 
     // Validate JWT token
     let jwt_config = JwtConfig::from_env().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let token_data = decode::<Claims>(token, &jwt_config.public_key, &jwt_config.validation)
+    let token_data = decode::<Claims>(&token, &jwt_config.public_key, &jwt_config.validation)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     // Extract username from the token
@@ -98,6 +91,35 @@ pub async fn jwt_auth_middleware(mut request: Request, next: Next) -> Result<Res
     tracing::info!("JWT authentication successful for user: {}", token_data.claims.sub);
 
     Ok(next.run(request).await)
+}
+
+fn extract_jwt_token(request: &Request) -> Option<String> {
+    // 1. Check Authorization header (Bearer token)
+    if let Some(auth_header) = request
+        .headers()
+        .get(AUTHORIZATION)
+        .and_then(|header| header.to_str().ok())
+    {
+        if let Some(token) = auth_header.strip_prefix("Bearer ") {
+            return Some(token.to_string());
+        }
+    }
+
+    // 2. Check for jwt_token cookie
+    if let Some(cookie_header) = request
+        .headers()
+        .get(COOKIE)
+        .and_then(|header| header.to_str().ok())
+    {
+        for cookie in cookie_header.split(';') {
+            let cookie = cookie.trim();
+            if let Some(token) = cookie.strip_prefix("jwt_token=") {
+                return Some(token.to_string());
+            }
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]

@@ -14,7 +14,7 @@ pub struct UsernameResponse {
     pub display_name: String,
 }
 
-pub async fn get_username_api(
+pub async fn get_api_username(
     State(database): State<Arc<dyn UserDatabase>>,
     Path(username): Path<String>,
 ) -> Result<Json<UsernameResponse>, StatusCode> {

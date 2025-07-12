@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h1>Username Display</h1>
+    
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    {% if username %}
+        <div class="info">
+            <strong>Username:</strong> {{ username }}
+        </div>
+        
+        {% if display_name %}
+            <div class="display-name">{{ display_name }}</div>
+        {% else %}
+            <div class="display-name">No display name set</div>
+        {% endif %}
+    {% else %}
+        <div class="error">No username provided</div>
+    {% endif %}
+    
+    <p><a href="/edit">Edit display name</a></p>
+</div>
+{% endblock %}

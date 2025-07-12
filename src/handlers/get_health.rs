@@ -20,7 +20,7 @@ pub struct HealthQuery {
     pub request_id: Option<String>,
 }
 
-pub async fn health_check(
+pub async fn get_health(
     axum::extract::State(database): axum::extract::State<Arc<dyn UserDatabase>>,
     Query(params): Query<HealthQuery>,
 ) -> Result<Json<HealthResponse>, StatusCode> {
