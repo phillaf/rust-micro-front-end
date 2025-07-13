@@ -5,9 +5,11 @@ use tracing::info;
 
 mod config;
 mod database;
+mod errors;
 mod handlers;
 mod middleware;
 mod router;
+mod validation;
 
 use config::validate_environment;
 use database::create_database_adapter;

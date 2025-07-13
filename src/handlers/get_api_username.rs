@@ -1,12 +1,13 @@
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
     response::Json,
 };
 use serde::Serialize;
 use std::sync::Arc;
 
-use crate::database::{validate_username, UserDatabase};
+use crate::database::UserDatabase;
+use crate::errors::AppError;
+use crate::validation::ValidatedUsername;
 
 #[derive(Debug, Serialize)]
 pub struct UsernameResponse {
@@ -17,27 +18,24 @@ pub struct UsernameResponse {
 pub async fn get_api_username(
     State(database): State<Arc<dyn UserDatabase>>,
     Path(username): Path<String>,
-) -> Result<Json<UsernameResponse>, StatusCode> {
-    if let Err(e) = validate_username(&username) {
-        tracing::warn!("Invalid username format '{}': {}", username, e);
-        return Err(StatusCode::BAD_REQUEST);
-    }
+) -> Result<Json<UsernameResponse>, AppError> {
+    let validated_username = ValidatedUsername::new(username)?;
 
-    match database.get_user(&username).await {
+    match database.get_user(validated_username.as_str()).await {
         Ok(Some(user)) => {
-            tracing::info!("Retrieved user data for '{}'", username);
+            tracing::info!("Retrieved user data for '{}'", validated_username);
             Ok(Json(UsernameResponse {
                 username: user.username,
                 display_name: user.display_name,
             }))
         }
         Ok(None) => {
-            tracing::info!("User '{}' not found", username);
-            Err(StatusCode::NOT_FOUND)
+            tracing::info!("User '{}' not found", validated_username);
+            Err(AppError::user_not_found(validated_username.as_str()))
         }
         Err(e) => {
-            tracing::error!("Database error retrieving user '{}': {}", username, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            tracing::error!("Database error retrieving user '{}': {}", validated_username, e);
+            Err(AppError::database_error(format!("Failed to get user: {}", e)))
         }
     }
 }

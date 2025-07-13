@@ -38,6 +38,9 @@ anyhow = "1.0"
 # Input Validation - Struct-based validation with custom rules
 validator = { version = "0.20.0", features = ["derive"] }
 
+# Regular Expressions - For input validation patterns
+regex = "1.10"
+
 # Correlation IDs - UUID generation for request tracing
 uuid = { version = "1.0", features = ["v4", "serde"] }
 

@@ -1,13 +1,14 @@
 use axum::{
     extract::{Extension, State},
-    http::StatusCode,
     response::Json,
 };
 use serde::Deserialize;
 use std::sync::Arc;
 
-use crate::database::{validate_display_name, validate_username, UserDatabase};
+use crate::database::UserDatabase;
+use crate::errors::AppError;
 use crate::handlers::get_api_username::UsernameResponse;
+use crate::validation::{sanitize_display_name, ValidatedDisplayName, ValidatedUsername};
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateUsernameRequest {
@@ -18,30 +19,25 @@ pub async fn post_api_username(
     State(database): State<Arc<dyn UserDatabase>>,
     Extension(username): Extension<String>,
     Json(payload): Json<UpdateUsernameRequest>,
-) -> Result<Json<UsernameResponse>, StatusCode> {
-    // Username is now extracted directly from the JWT token via the Extension extractor
+) -> Result<Json<UsernameResponse>, AppError> {
+    // Validate username from JWT token
+    let validated_username = ValidatedUsername::new(username)?;
+    
+    // Sanitize and validate display name
+    let sanitized_display_name = sanitize_display_name(&payload.display_name);
+    let validated_display_name = ValidatedDisplayName::new(sanitized_display_name)?;
 
-    if let Err(e) = validate_display_name(&payload.display_name) {
-        tracing::warn!("Invalid display name '{}': {}", payload.display_name, e);
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    if let Err(e) = validate_username(&username) {
-        tracing::error!("Invalid username from token '{}': {}", username, e);
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
-
-    match database.update_user_display_name(&username, &payload.display_name).await {
+    match database.update_user_display_name(validated_username.as_str(), validated_display_name.as_str()).await {
         Ok(()) => {
-            tracing::info!("Updated display name for '{}' to '{}'", username, payload.display_name);
+            tracing::info!("Updated display name for '{}' to '{}'", validated_username, validated_display_name);
             Ok(Json(UsernameResponse {
-                username: username.to_string(),
-                display_name: payload.display_name,
+                username: validated_username.into_string(),
+                display_name: validated_display_name.into_string(),
             }))
         }
         Err(e) => {
-            tracing::error!("Database error updating user '{}': {}", username, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            tracing::error!("Database error updating user '{}': {}", validated_username, e);
+            Err(AppError::database_error(format!("Failed to update user: {}", e)))
         }
     }
 }
