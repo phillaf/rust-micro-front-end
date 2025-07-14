@@ -19,7 +19,6 @@ pub enum ErrorCode {
     ValidationFailed,
     UserNotFound,
     DatabaseError,
-    AuthenticationFailed,
     InvalidInput,
     InternalServerError,
 }
@@ -41,11 +40,6 @@ impl AppError {
         }
     }
 
-    pub fn with_details(mut self, details: impl Into<String>) -> Self {
-        self.details = Some(details.into());
-        self
-    }
-
     pub fn validation_failed(message: impl Into<String>) -> Self {
         Self::new(ErrorCode::ValidationFailed, message)
     }
@@ -56,10 +50,6 @@ impl AppError {
 
     pub fn database_error(message: impl Into<String>) -> Self {
         Self::new(ErrorCode::DatabaseError, message)
-    }
-
-    pub fn authentication_failed(message: impl Into<String>) -> Self {
-        Self::new(ErrorCode::AuthenticationFailed, message)
     }
 
     pub fn invalid_input(message: impl Into<String>) -> Self {
@@ -77,7 +67,6 @@ impl IntoResponse for AppError {
             ErrorCode::ValidationFailed => (StatusCode::BAD_REQUEST, "Validation failed"),
             ErrorCode::UserNotFound => (StatusCode::NOT_FOUND, "User not found"),
             ErrorCode::DatabaseError => (StatusCode::INTERNAL_SERVER_ERROR, "Database error"),
-            ErrorCode::AuthenticationFailed => (StatusCode::UNAUTHORIZED, "Authentication failed"),
             ErrorCode::InvalidInput => (StatusCode::BAD_REQUEST, "Invalid input"),
             ErrorCode::InternalServerError => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
         };
@@ -126,5 +115,11 @@ impl From<minijinja::Error> for AppError {
 impl From<serde_json::Error> for AppError {
     fn from(err: serde_json::Error) -> Self {
         AppError::invalid_input(format!("JSON parsing failed: {}", err))
+    }
+}
+
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError::internal_server_error(format!("Operation failed: {}", err))
     }
 }

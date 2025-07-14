@@ -9,11 +9,13 @@ mod errors;
 mod handlers;
 mod middleware;
 mod router;
+mod template;
 mod validation;
 
 use config::validate_environment;
 use database::create_database_adapter;
 use router::create_app;
+use template::create_template_service;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -41,10 +43,13 @@ async fn main() -> Result<()> {
     let database = create_database_adapter().await?;
     info!("- Database adapter initialized successfully");
 
+    let template_service = create_template_service()?;
+    info!("- Template service initialized successfully");
+
     info!("- Starting Rust Micro Front-End Application");
     info!("- Log level: {}", log_level);
 
-    let app = create_app(database);
+    let app = create_app(database, template_service);
 
     let port = env::var("PORT")
         .unwrap_or_else(|_| "80".to_string())

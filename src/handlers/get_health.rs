@@ -1,10 +1,10 @@
-use axum::{extract::Query, http::StatusCode, response::Json};
+use axum::{extract::{Query, State}, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
 use std::{env, sync::Arc};
 use tracing::info;
 use uuid::Uuid;
 
-use crate::database::UserDatabase;
+use crate::router::AppState;
 
 #[derive(Debug, Serialize)]
 pub struct HealthResponse {
@@ -21,14 +21,14 @@ pub struct HealthQuery {
 }
 
 pub async fn get_health(
-    axum::extract::State(database): axum::extract::State<Arc<dyn UserDatabase>>,
+    State(app_state): State<Arc<AppState>>,
     Query(params): Query<HealthQuery>,
 ) -> Result<Json<HealthResponse>, StatusCode> {
     let request_id = params.request_id.unwrap_or_else(|| Uuid::new_v4().to_string());
 
     info!("Health check requested (request_id: {})", request_id);
 
-    let database_status = match database.health_check().await {
+    let database_status = match app_state.database.health_check().await {
         Ok(status) => status,
         Err(e) => {
             tracing::error!("Database health check failed: {}", e);

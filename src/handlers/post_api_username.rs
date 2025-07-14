@@ -5,9 +5,9 @@ use axum::{
 use serde::Deserialize;
 use std::sync::Arc;
 
-use crate::database::UserDatabase;
 use crate::errors::AppError;
 use crate::handlers::get_api_username::UsernameResponse;
+use crate::router::AppState;
 use crate::validation::{sanitize_display_name, ValidatedDisplayName, ValidatedUsername};
 
 #[derive(Debug, Deserialize)]
@@ -16,7 +16,7 @@ pub struct UpdateUsernameRequest {
 }
 
 pub async fn post_api_username(
-    State(database): State<Arc<dyn UserDatabase>>,
+    State(app_state): State<Arc<AppState>>,
     Extension(username): Extension<String>,
     Json(payload): Json<UpdateUsernameRequest>,
 ) -> Result<Json<UsernameResponse>, AppError> {
@@ -27,7 +27,7 @@ pub async fn post_api_username(
     let sanitized_display_name = sanitize_display_name(&payload.display_name);
     let validated_display_name = ValidatedDisplayName::new(sanitized_display_name)?;
 
-    match database.update_user_display_name(validated_username.as_str(), validated_display_name.as_str()).await {
+    match app_state.database.update_user_display_name(validated_username.as_str(), validated_display_name.as_str()).await {
         Ok(()) => {
             tracing::info!("Updated display name for '{}' to '{}'", validated_username, validated_display_name);
             Ok(Json(UsernameResponse {

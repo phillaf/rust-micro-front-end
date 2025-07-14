@@ -95,10 +95,8 @@
                     // Add success message
                     form.parentElement.insertBefore(successDiv, form);
                     
-                    // Optionally redirect to display page
-                    setTimeout(() => {
-                        window.location.href = `/display/username/${data.username}`;
-                    }, 1500);
+                    // Update the form field to show the new value
+                    document.getElementById('display_name').value = data.display_name;
                 })
                 .catch(error => {
                     // Show error message

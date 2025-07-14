@@ -1,21 +1,21 @@
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::Html,
+    http::{header::SET_COOKIE, StatusCode},
+    response::Response,
 };
 use minijinja::Environment;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
 
-use crate::database::UserDatabase;
+use crate::router::AppState;
 
 /// GET /debug/set-token/{username} - Debug utility to set JWT token in browser
 pub async fn get_debug_set_token(
-    State(_database): State<Arc<dyn UserDatabase>>,
+    State(_app_state): State<Arc<AppState>>,
     Path(username): Path<String>,
     Query(params): Query<HashMap<String, String>>,
-) -> Result<Html<String>, StatusCode> {
+) -> Result<Response, StatusCode> {
     info!("Debug: Setting JWT token for username: {}", username);
     
     // Use token from query parameter if provided, otherwise generate one
@@ -156,7 +156,15 @@ pub async fn get_debug_set_token(
         .replace("{{ username }}", &username)
         .replace("{{ token }}", &token);
     
-    Ok(Html(html))
+    // Build response with cookie header
+    let cookie_value = format!("jwt_token={}; Path=/; Max-Age=3600; HttpOnly; SameSite=Lax", token);
+    
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("Content-Type", "text/html; charset=utf-8")
+        .header(SET_COOKIE, cookie_value)
+        .body(html.into())
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 fn generate_debug_jwt(username: &str) -> Result<String, StatusCode> {

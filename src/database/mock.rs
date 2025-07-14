@@ -37,6 +37,14 @@ impl MockUserDatabase {
             },
         );
 
+        users.insert(
+            "testuser".to_string(),
+            User {
+                username: "testuser".to_string(),
+                display_name: "testuser".to_string(),
+            },
+        );
+
         tracing::info!("Mock database initialized with {} sample users", users.len());
 
         Self { users: Arc::new(RwLock::new(users)) }

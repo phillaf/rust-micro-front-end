@@ -5,8 +5,8 @@ use axum::{
 use serde::Serialize;
 use std::sync::Arc;
 
-use crate::database::UserDatabase;
 use crate::errors::AppError;
+use crate::router::AppState;
 use crate::validation::ValidatedUsername;
 
 #[derive(Debug, Serialize)]
@@ -16,12 +16,12 @@ pub struct UsernameResponse {
 }
 
 pub async fn get_api_username(
-    State(database): State<Arc<dyn UserDatabase>>,
+    State(app_state): State<Arc<AppState>>,
     Path(username): Path<String>,
 ) -> Result<Json<UsernameResponse>, AppError> {
     let validated_username = ValidatedUsername::new(username)?;
 
-    match database.get_user(validated_username.as_str()).await {
+    match app_state.database.get_user(validated_username.as_str()).await {
         Ok(Some(user)) => {
             tracing::info!("Retrieved user data for '{}'", validated_username);
             Ok(Json(UsernameResponse {

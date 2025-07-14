@@ -2,17 +2,17 @@ use axum::{
     extract::{Path, State},
     response::Html,
 };
-use minijinja::{context, Environment};
+use minijinja::context;
 use std::sync::Arc;
 use tracing::info;
 
-use crate::database::UserDatabase;
 use crate::errors::AppError;
+use crate::router::AppState;
 use crate::validation::ValidatedUsername;
 
 /// GET /display/username/{username} - Display component shows username and display name
 pub async fn get_display_username(
-    State(database): State<Arc<dyn UserDatabase>>,
+    State(app_state): State<Arc<AppState>>,
     Path(username): Path<String>,
 ) -> Result<Html<String>, AppError> {
     info!("Display request for username: {}", username);
@@ -20,18 +20,12 @@ pub async fn get_display_username(
     // Validate username
     let validated_username = ValidatedUsername::new(username)?;
     
-    // Create template environment
-    let mut env = Environment::new();
-    env.set_loader(minijinja::path_loader("templates"));
-    
     // Get user data from database
-    let user_data = match database.get_user(validated_username.as_str()).await {
+    let user_data = match app_state.database.get_user(validated_username.as_str()).await {
         Ok(Some(user)) => user,
         Ok(None) => {
             // User not found - still render template but show error
-            let template = env.get_template("display.html")?;
-            
-            let html = template.render(context! {
+            let html = app_state.template_service.render("display.html", context! {
                 username => validated_username.as_str(),
                 error => "User not found"
             })?;
@@ -43,10 +37,8 @@ pub async fn get_display_username(
         }
     };
     
-    // Load and render the display template
-    let template = env.get_template("display.html")?;
-    
-    let html = template.render(context! {
+    // Render the display template
+    let html = app_state.template_service.render("display.html", context! {
         username => user_data.username,
         display_name => user_data.display_name,
         title => format!("Display - {}", user_data.username)

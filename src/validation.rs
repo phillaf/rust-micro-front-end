@@ -114,11 +114,6 @@ pub fn sanitize_display_name(display_name: &str) -> String {
     display_name.trim().to_string()
 }
 
-/// Sanitize username by converting to lowercase and trimming
-pub fn sanitize_username(username: &str) -> String {
-    username.trim().to_lowercase()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

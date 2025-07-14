@@ -49,7 +49,7 @@ prometheus = "0.14"
 
 # HTTP utilities
 tower = "0.5"
-tower-http = { version = "0.6.6", features = ["cors", "compression-gzip", "compression-br", "limit", "trace"] }
+tower-http = { version = "0.6.6", features = ["cors", "compression-gzip", "compression-br", "limit", "trace", "timeout", "set-header"] }
 
 # Date/Time handling
 chrono = { version = "0.4", features = ["serde"] }
