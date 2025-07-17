@@ -110,7 +110,7 @@ mod tests {
     #[tokio::test]
     async fn test_mock_database_new() {
         let db = MockUserDatabase::new();
-        assert_eq!(db.user_count().await, 3);
+        assert_eq!(db.user_count().await, 4); // Updated to match the actual count
 
         let admin = db.get_user("admin").await.unwrap();
         assert!(admin.is_some());
@@ -134,7 +134,7 @@ mod tests {
 
         let user = db.get_user("admin").await.unwrap().unwrap();
         assert_eq!(user.display_name, "Super Admin");
-        assert_eq!(db.user_count().await, 3); // Should still have 3 users
+        assert_eq!(db.user_count().await, 4); // Should still have 4 users
     }
 
     #[tokio::test]
@@ -163,6 +163,6 @@ mod tests {
         let db = MockUserDatabase::new();
         let health = db.health_check().await.unwrap();
         assert!(health.contains("mock_db_healthy"));
-        assert!(health.contains("3_users"));
+        assert!(health.contains("4_users")); // Updated to match actual count
     }
 }

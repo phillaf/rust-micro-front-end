@@ -13,6 +13,8 @@ mod middleware;
 mod router;
 mod template;
 mod validation;
+#[cfg(test)]
+mod tests;
 
 use config::validate_environment;
 use database::create_database_adapter;

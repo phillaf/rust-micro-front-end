@@ -31,6 +31,65 @@ pub struct AppMetrics {
 }
 
 impl AppMetrics {
+    #[cfg(test)]
+    pub fn new_for_tests() -> Self {
+        use prometheus::{IntCounterVec, IntGauge, HistogramVec};
+        use prometheus::opts;
+        
+        // In tests, we don't register metrics with the global registry to avoid collisions
+        Self {
+            http_requests_total: IntCounterVec::new(
+                opts!("http_requests_total", "Total number of HTTP requests"),
+                &["method", "path", "status"]
+            ).unwrap(),
+            
+            http_requests_duration_seconds: HistogramVec::new(
+                prometheus::histogram_opts!("http_requests_duration_seconds", "HTTP request duration in seconds", vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]),
+                &["method", "path"]
+            ).unwrap(),
+            
+            http_requests_in_flight: IntGauge::new(
+                "http_requests_in_flight", 
+                "Number of HTTP requests currently in flight"
+            ).unwrap(),
+            
+            auth_success_total: IntCounterVec::new(
+                opts!("auth_success_total", "Total number of successful authentication attempts"),
+                &["username"]
+            ).unwrap(),
+            
+            auth_failure_total: IntCounterVec::new(
+                opts!("auth_failure_total", "Total number of failed authentication attempts"),
+                &["reason"]
+            ).unwrap(),
+            
+            database_queries_total: IntCounterVec::new(
+                opts!("database_queries_total", "Total number of database queries"),
+                &["operation", "table"]
+            ).unwrap(),
+            
+            database_query_duration_seconds: HistogramVec::new(
+                prometheus::histogram_opts!("database_query_duration_seconds", "Database query duration in seconds", vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]),
+                &["operation", "table"]
+            ).unwrap(),
+            
+            template_render_duration_seconds: HistogramVec::new(
+                prometheus::histogram_opts!("template_render_duration_seconds", "Template rendering duration in seconds", vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25]),
+                &["template"]
+            ).unwrap(),
+            
+            cache_hit_total: IntCounterVec::new(
+                opts!("cache_hit_total", "Total number of cache hits"),
+                &["cache"]
+            ).unwrap(),
+            
+            cache_miss_total: IntCounterVec::new(
+                opts!("cache_miss_total", "Total number of cache misses"),
+                &["cache"]
+            ).unwrap(),
+        }
+    }
+    
     pub fn new() -> Self {
         // HTTP request metrics
         let http_requests_total = register_int_counter_vec!(
