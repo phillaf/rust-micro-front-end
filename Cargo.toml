@@ -51,6 +51,10 @@ prometheus = "0.14"
 tower = "0.5"
 tower-http = { version = "0.6.6", features = ["cors", "compression-gzip", "compression-br", "limit", "trace", "timeout", "set-header"] }
 
+# Minification - HTML, CSS, and JavaScript minification
+minify-html = "0.15"
+minify-js = "0.6"
+
 # Date/Time handling
 chrono = { version = "0.4", features = ["serde"] }
 

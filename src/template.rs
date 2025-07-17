@@ -10,20 +10,22 @@ pub struct TemplateService {
     environment: Arc<RwLock<Environment<'static>>>,
     cache_enabled: bool,
     template_cache: Arc<RwLock<HashMap<String, String>>>,
+    minify_enabled: bool,
 }
 
 impl TemplateService {
-    /// Create a new template service with caching
-    pub fn new(cache_enabled: bool) -> Result<Self> {
+    /// Create a new template service with caching and minification
+    pub fn new(cache_enabled: bool, minify_enabled: bool) -> Result<Self> {
         let mut env = Environment::new();
         env.set_loader(minijinja::path_loader("templates"));
         
-        info!("Template service initialized with caching: {}", cache_enabled);
+        info!("Template service initialized with caching: {}, minification: {}", cache_enabled, minify_enabled);
         
         Ok(Self {
             environment: Arc::new(RwLock::new(env)),
             cache_enabled,
             template_cache: Arc::new(RwLock::new(HashMap::new())),
+            minify_enabled,
         })
     }
     
@@ -33,7 +35,7 @@ impl TemplateService {
         let should_cache = self.cache_enabled && !self.is_user_specific_template(template_name);
         
         if should_cache {
-            let cache_key = format!("{}:{}", template_name, self.context_hash(&context));
+            let cache_key = format!("{}:{}:{}", template_name, self.context_hash(&context), self.minify_enabled);
             
             // Check cache first if enabled
             if let Some(cached_html) = self.get_cached_html(&cache_key) {
@@ -48,11 +50,18 @@ impl TemplateService {
             let template = env.get_template(template_name)?;
             let html = template.render(context)?;
             
+            // Apply minification if enabled
+            let final_html = if self.minify_enabled {
+                self.minify_html(&html)?
+            } else {
+                html
+            };
+            
             // Cache the result
-            self.cache_html(cache_key, html.clone());
+            self.cache_html(cache_key, final_html.clone());
             debug!("Template cached for: {}", template_name);
             
-            Ok(html)
+            Ok(final_html)
         } else {
             // Don't use cache - render fresh every time
             debug!("Rendering fresh template (no cache): {}", template_name);
@@ -63,7 +72,14 @@ impl TemplateService {
             let template = env.get_template(template_name)?;
             let html = template.render(context)?;
             
-            Ok(html)
+            // Apply minification if enabled
+            let final_html = if self.minify_enabled {
+                self.minify_html(&html)?
+            } else {
+                html
+            };
+            
+            Ok(final_html)
         }
     }
     
@@ -110,6 +126,32 @@ impl TemplateService {
         // Disable caching for all user-facing templates to ensure fresh data
         matches!(template_name, "display.html" | "edit.html")
     }
+    
+    /// Minify HTML content for production performance
+    fn minify_html(&self, html: &str) -> Result<String> {
+        use minify_html::{minify, Cfg};
+        
+        let cfg = Cfg {
+            do_not_minify_doctype: true,
+            ensure_spec_compliant_unquoted_attribute_values: true,
+            keep_closing_tags: true,
+            keep_html_and_head_opening_tags: true,
+            keep_spaces_between_attributes: true, // Keep spaces for better compatibility
+            keep_comments: false,
+            keep_input_type_text_attr: true, // Keep input attributes
+            keep_ssi_comments: false,
+            preserve_brace_template_syntax: false,
+            preserve_chevron_percent_template_syntax: false,
+            minify_css: false, // Disable CSS minification for now
+            minify_js: false,  // Disable JS minification for now
+            remove_bangs: false,
+            remove_processing_instructions: false,
+        };
+        
+        let minified = minify(html.as_bytes(), &cfg);
+        String::from_utf8(minified)
+            .map_err(|e| anyhow::anyhow!("Failed to convert minified HTML to string: {}", e))
+    }
 }
 
 /// Create template service based on environment
@@ -119,5 +161,10 @@ pub fn create_template_service() -> Result<TemplateService> {
         .parse()
         .unwrap_or(true);
     
-    TemplateService::new(cache_enabled)
+    let minify_enabled = std::env::var("MINIFY_ENABLED")
+        .unwrap_or_else(|_| "false".to_string())
+        .parse()
+        .unwrap_or(false);
+    
+    TemplateService::new(cache_enabled, minify_enabled)
 }
