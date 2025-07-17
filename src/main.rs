@@ -7,6 +7,8 @@ mod config;
 mod database;
 mod errors;
 mod handlers;
+mod logging;
+mod metrics;
 mod middleware;
 mod router;
 mod template;

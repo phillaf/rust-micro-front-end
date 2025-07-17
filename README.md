@@ -164,3 +164,51 @@ This project uses a **fully containerized development environment**. You don't n
 - **Granular Logging**: Adjust `LOG_LEVEL` for debugging needs
 - **Feature Flags**: Use individual `ENABLE_*` variables for testing
 
+## Monitoring & Observability
+
+The application includes comprehensive monitoring and observability features:
+
+### Prometheus Metrics
+
+Access Prometheus metrics at `/metrics` endpoint. Available metrics include:
+
+- **HTTP Metrics**:
+  - `http_requests_total` - Request count by method, path, and status
+  - `http_requests_duration_seconds` - Request duration histograms
+  - `http_requests_in_flight` - Currently active requests
+
+- **Authentication Metrics**:
+  - `auth_success_total` - Successful authentication attempts
+  - `auth_failure_total` - Failed authentication attempts by reason
+
+- **Database Metrics**:
+  - `database_queries_total` - Query count by operation and status
+  - `database_query_duration_seconds` - Query execution time histograms
+
+- **Application Metrics**:
+  - `template_render_duration_seconds` - Template rendering performance
+  - `cache_hit_total` and `cache_miss_total` - Cache effectiveness
+
+### Health Monitoring
+
+The `/health` endpoint provides comprehensive health checks:
+
+- **Database connectivity**
+- **Template engine status**
+- **JWT public key validation**
+- **Uptime tracking**
+- **Environment verification**
+
+```bash
+# Sample health check request
+curl http://localhost/health | jq
+```
+
+### Grafana Integration
+
+The Prometheus metrics can be visualized using Grafana:
+
+1. Configure Grafana to use the `/metrics` endpoint as a Prometheus data source
+2. Import the dashboards from `monitoring/dashboards/` (coming soon)
+3. Set up alerts based on performance thresholds
+

@@ -152,6 +152,29 @@ impl TemplateService {
         String::from_utf8(minified)
             .map_err(|e| anyhow::anyhow!("Failed to convert minified HTML to string: {}", e))
     }
+    
+    /// Health check for template service
+    pub fn health_check(&self) -> bool {
+        // Check if template environment is accessible
+        let env_accessible = self.environment.read().is_ok();
+        
+        // Check if we can access the cache
+        let cache_accessible = self.template_cache.read().is_ok();
+        
+        // Check if base template exists and can be loaded
+        let template_accessible = if env_accessible {
+            if let Ok(env) = self.environment.read() {
+                env.get_template("base.html").is_ok()
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        
+        // All checks must pass
+        env_accessible && cache_accessible && template_accessible
+    }
 }
 
 /// Create template service based on environment

@@ -19,8 +19,11 @@ use crate::handlers::{
     get_display::get_display_username,
     get_edit::get_edit,
     get_health::get_health,
+    get_static::{get_manifest, get_robots_txt, get_sitemap},
     post_api_username::post_api_username,
 };
+use crate::logging::{error_logging_middleware, request_context_middleware, security_event_logging_middleware};
+use crate::metrics::{AppMetrics, get_metrics, track_metrics};
 use crate::middleware::{jwt_auth_middleware, rate_limiting_middleware, security_headers_middleware};
 use crate::template::TemplateService;
 
@@ -29,20 +32,29 @@ use crate::template::TemplateService;
 pub struct AppState {
     pub database: Arc<dyn UserDatabase>,
     pub template_service: TemplateService,
+    pub metrics: AppMetrics,
 }
 
 pub fn create_app(database: Arc<dyn UserDatabase>, template_service: TemplateService) -> Router {
+    // Initialize metrics
+    let app_metrics = AppMetrics::new();
+    
     let app_state = Arc::new(AppState {
         database,
         template_service,
+        metrics: app_metrics,
     });
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
         .route("/health", get(get_health))
+        .route("/metrics", get(get_metrics))  // Add Prometheus metrics endpoint
         .route("/api/username/{username}", get(get_api_username))
         .route("/display/username/{username}", get(get_display_username))
-        .route("/debug/set-token/{username}", get(get_debug_set_token));
+        .route("/debug/set-token/{username}", get(get_debug_set_token))
+        .route("/manifest.json", get(get_manifest))
+        .route("/robots.txt", get(get_robots_txt))
+        .route("/sitemap.xml", get(get_sitemap));
 
     // Protected routes (JWT authentication required) - apply rate limiting to auth endpoints
     let protected_routes = Router::new()
@@ -55,6 +67,10 @@ pub fn create_app(database: Arc<dyn UserDatabase>, template_service: TemplateSer
     Router::new()
         .merge(public_routes)
         .merge(protected_routes)
+        .layer(middleware::from_fn_with_state(app_state.clone(), track_metrics))  // Add metrics tracking
+        .layer(middleware::from_fn(request_context_middleware))   // Add structured logging
+        .layer(middleware::from_fn(error_logging_middleware))    // Add error logging
+        .layer(middleware::from_fn(security_event_logging_middleware)) // Add security event logging
         .layer(middleware::from_fn(security_headers_middleware))
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new().gzip(true).br(true))

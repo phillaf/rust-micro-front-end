@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card">
+<main id="main-content" class="card">
     <h1>Content Management System</h1>
     
     {% if error %}
-        <div class="error">{{ error }}</div>
+        <div class="error" role="alert" aria-live="polite">{{ error }}</div>
     {% endif %}
     
     {% if success %}
-        <div class="success">{{ success }}</div>
+        <div class="success" role="alert" aria-live="polite">{{ success }}</div>
     {% endif %}
     
     {% if username %}
@@ -17,7 +17,7 @@
             <strong>Authenticated as:</strong> {{ username }}
         </div>
         
-        <form method="POST" action="/api/username" id="cmsForm">
+        <form method="POST" action="/api/username" id="cmsForm" aria-label="Update display name form">
             <div class="form-group">
                 <label for="display_name">Display Name</label>
                 <input type="text" 
@@ -25,12 +25,15 @@
                        name="display_name" 
                        value="{{ display_name | default('') }}" 
                        placeholder="Enter your display name"
+                       aria-describedby="display-name-help"
                        required>
+                <small id="display-name-help" class="form-help">This is the name that will be displayed publicly.</small>
             </div>
             
             <input type="hidden" name="username" value="{{ username }}">
             
-            <button type="submit" class="btn">Update Display Name</button>
+            <button type="submit" class="btn" aria-describedby="submit-help">Update Display Name</button>
+            <small id="submit-help" class="form-help">Click to save your display name changes.</small>
         </form>
         
         <script>
@@ -120,9 +123,11 @@
             });
         </script>
     {% else %}
-        <div class="error">Authentication required. Please log in.</div>
+        <div class="error" role="alert" aria-live="polite">Authentication required. Please log in.</div>
     {% endif %}
     
-    <p><a href="/display/username/{{ username }}">View display</a></p>
-</div>
+    <nav>
+        <a href="/display/username/{{ username }}" class="btn">View display</a>
+    </nav>
+</main>
 {% endblock %}

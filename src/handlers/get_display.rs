@@ -41,7 +41,9 @@ pub async fn get_display_username(
     let html = app_state.template_service.render("display.html", context! {
         username => user_data.username,
         display_name => user_data.display_name,
-        title => format!("Display - {}", user_data.username)
+        title => format!("Display - {}", user_data.username),
+        description => format!("View the display name for user {}", user_data.username),
+        keywords => "user, display, profile, username"
     })?;
     
     Ok(Html(html))

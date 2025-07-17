@@ -44,7 +44,9 @@ pub async fn get_edit(
     let html = app_state.template_service.render("edit.html", context! {
         username => validated_username.as_str(),
         display_name => current_display_name,
-        title => format!("Edit - {}", validated_username)
+        title => format!("Edit - {}", validated_username),
+        description => format!("Content management system to edit display name for user {}", validated_username.as_str()),
+        keywords => "edit, cms, content management, display name, profile"
     })?;
     
     Ok(Html(html))

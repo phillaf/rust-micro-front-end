@@ -35,6 +35,7 @@ pub async fn get_debug_set_token(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Development debug utility for setting JWT tokens">
     <title>JWT Token Debug Helper</title>
     <style>
         body {
@@ -43,6 +44,8 @@ pub async fn get_debug_set_token(
             margin: 50px auto;
             padding: 20px;
             background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
         }
         .container {
             background: white;
@@ -51,12 +54,12 @@ pub async fn get_debug_set_token(
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .success {
-            color: #27ae60;
+            color: #106330; /* Darker green for better contrast */
             background: #d5f4e6;
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
-            border: 1px solid #27ae60;
+            border: 1px solid #106330;
         }
         .token {
             background: #f8f9fa;
@@ -66,9 +69,10 @@ pub async fn get_debug_set_token(
             word-break: break-all;
             margin: 15px 0;
             border: 1px solid #dee2e6;
+            color: #333;
         }
         .btn {
-            background: #3498db;
+            background: #1a6ea5; /* Darker blue for better contrast */
             color: white;
             padding: 12px 24px;
             border: none;
@@ -77,9 +81,39 @@ pub async fn get_debug_set_token(
             text-decoration: none;
             display: inline-block;
             margin: 10px 10px 10px 0;
+            font-weight: 500;
         }
         .btn:hover {
-            background: #2980b9;
+            background: #125180;
+        }
+        .btn:focus {
+            outline: 2px solid #125180;
+            outline-offset: 2px;
+        }
+        code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #333;
+            font-family: monospace;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #dee2e6;
+            margin: 30px 0;
+        }
+        /* Ensure proper heading hierarchy */
+        h1 {
+            color: #1a365d;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        h2 {
+            color: #2a4365;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
         }
     </style>
 </head>
@@ -87,7 +121,7 @@ pub async fn get_debug_set_token(
     <div class="container">
         <h1>JWT Token Set Successfully!</h1>
         
-        <div class="success">
+        <div class="success" role="alert" aria-live="polite">
             ✓ JWT token has been automatically set for user: <strong>{{ username }}</strong>
         </div>
         
@@ -105,9 +139,9 @@ pub async fn get_debug_set_token(
             <a href="/display/username/{{ username }}" class="btn">View Display</a>
         </div>
         
-        <hr style="margin: 30px 0;">
+        <hr>
         
-        <h3>Debug Information</h3>
+        <h2>Debug Information</h2>
         <p>This is a development-only utility. The token is automatically injected via JavaScript.</p>
         <p>To test with a different user, visit: <code>/debug/set-token/&lt;username&gt;</code></p>
     </div>

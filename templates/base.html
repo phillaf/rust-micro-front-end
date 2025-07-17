@@ -3,7 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
     <title>{{ title | default("Micro Frontend App") }}</title>
+    <meta name="description" content="{{ description | default('A high-performance, containerized micro web-application demonstrating modern web development constraints with Rust, Docker, and micro front-end architecture') }}">
+    <meta name="keywords" content="{{ keywords | default('microservice, frontend, rust, docker, web application, performance') }}">
+    <meta name="author" content="Philippe Lafrance">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ title | default('Micro Frontend App') }}">
+    <meta property="og:description" content="{{ description | default('A high-performance, containerized micro web-application demonstrating modern web development constraints with Rust, Docker, and micro front-end architecture') }}">
+    <meta property="og:site_name" content="Micro Frontend App">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ title | default('Micro Frontend App') }}">
+    <meta name="twitter:description" content="{{ description | default('A high-performance, containerized micro web-application demonstrating modern web development constraints with Rust, Docker, and micro front-end architecture') }}">
+    
+    <!-- Performance and Accessibility -->
+    <meta name="theme-color" content="#3498db">
+    <meta name="color-scheme" content="light">
+    
+    <!-- Performance Optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "{{ title | default('Micro Frontend App') }}",
+        "description": "{{ description | default('A high-performance, containerized micro web-application demonstrating modern web development constraints with Rust, Docker, and micro front-end architecture') }}",
+        "url": "{{ url | default('') }}",
+        "author": {
+            "@type": "Person",
+            "name": "Philippe Lafrance"
+        },
+        "applicationCategory": "WebApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript"
+    }
+    </script>
     <style>
         * {
             margin: 0;
@@ -16,6 +66,7 @@
             line-height: 1.6;
             color: #333;
             background-color: #f5f5f5;
+            min-height: 100vh;
         }
         
         .container {
@@ -25,7 +76,7 @@
         }
         
         .card {
-            background: white;
+            background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 30px;
@@ -33,14 +84,14 @@
         }
         
         h1 {
-            color: #2c3e50;
+            color: #1a202c;
             margin-bottom: 20px;
             font-size: 2.5rem;
             font-weight: 600;
         }
         
         h2 {
-            color: #34495e;
+            color: #2d3748;
             margin-bottom: 15px;
             font-size: 1.5rem;
         }
@@ -49,11 +100,18 @@
             margin-bottom: 20px;
         }
         
+        .form-help {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+        
         label {
             display: block;
             margin-bottom: 5px;
-            font-weight: 500;
-            color: #555;
+            font-weight: 600;
+            color: #1a202c;
         }
         
         input[type="text"] {
@@ -63,15 +121,25 @@
             border-radius: 4px;
             font-size: 16px;
             transition: border-color 0.3s ease;
+            background-color: white;
+            color: #1a202c;
         }
         
         input[type="text"]:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+            background-color: white;
+            color: #1a202c;
+        }
+        
+        input[type="text"]:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
         }
         
         .btn {
-            background-color: #3498db;
+            background-color: #2563eb;
             color: white;
             padding: 12px 24px;
             border: none;
@@ -79,19 +147,27 @@
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
+            font-weight: 500;
         }
         
         .btn:hover {
-            background-color: #2980b9;
+            background-color: #1d4ed8;
+        }
+        
+        .btn:focus {
+            outline: 2px solid #1d4ed8;
+            outline-offset: 2px;
         }
         
         .btn:disabled {
-            background-color: #bdc3c7;
+            background-color: #94a3b8;
             cursor: not-allowed;
         }
         
         .error {
-            color: #e74c3c;
+            color: #c0392b;
             background-color: #fdf2f2;
             padding: 10px;
             border-radius: 4px;
@@ -111,24 +187,73 @@
         .display-name {
             font-size: 1.25rem;
             font-weight: 500;
-            color: #2c3e50;
-            background-color: #ecf0f1;
+            color: #1a202c;
+            background-color: #f0f4f8;
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
         }
         
         .info {
-            background-color: #e8f4f8;
+            background-color: #ebf8ff;
             padding: 15px;
             border-radius: 4px;
-            border-left: 4px solid #3498db;
-            margin-bottom: 20px;
+            border-left: 4px solid #2563eb;
+            margin-bottom: 24px;
+            color: #1a202c;
         }
         
         .loading {
             opacity: 0.6;
             pointer-events: none;
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .btn {
+                border: 2px solid currentColor;
+            }
+            
+            .error {
+                border-width: 2px;
+            }
+            
+            .success {
+                border-width: 2px;
+            }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #2c3e50;
+                color: #ecf0f1;
+            }
+            
+            .card {
+                background-color: #34495e;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            }
+            
+            input[type="text"] {
+                background-color: #34495e;
+                border-color: #5d6d7e;
+                color: #ecf0f1;
+            }
+            
+            input[type="text"]:focus {
+                border-color: #3498db;
+            }
         }
         
         @media (max-width: 600px) {
@@ -143,6 +268,58 @@
             h1 {
                 font-size: 2rem;
             }
+        }
+        
+        /* Force light mode and prevent dark mode overrides */
+        body, .container, .card {
+            background-color: #f5f5f5 !important;
+            color: #333 !important;
+        }
+        
+        .card {
+            background-color: white !important;
+        }
+        
+        h1, h2 {
+            color: #1a202c !important;
+        }
+        
+        /* Ensure form elements have proper text coloring */
+        form {
+            margin: 0;
+            padding: 0;
+        }
+        
+        label, .form-help {
+            color: #1a202c !important;
+        }
+        
+        input[type="text"] {
+            background-color: white !important;
+            color: #1a202c !important;
+            border-color: #e2e8f0 !important;
+        }
+        
+        /* Keep button styling */
+        .btn {
+            color: white !important;
+        }
+        
+        /* Accessibility focus styles */
+        *:focus {
+            outline: 2px solid #3498db;
+            outline-offset: 2px;
+        }
+        
+        /* Additional alignment styles */
+        .info {
+            margin-bottom: 24px;
+        }
+        
+        /* Make sure the submit button aligns with the info box */
+        form .btn {
+            margin-top: 4px;
+            margin-left: 0;
         }
     </style>
 </head>
