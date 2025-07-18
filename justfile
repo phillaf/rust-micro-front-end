@@ -169,6 +169,47 @@ generate-ssl:
     @echo "Generating self-signed SSL certificates for development..."
     ./scripts/generate_ssl_cert.sh
 
+# Backup and recovery commands
+backup-database:
+    @echo "Backing up database..."
+    docker compose run --rm app /scripts/backup/db_full_backup.sh
+
+backup-config:
+    @echo "Backing up configuration..."
+    docker compose run --rm app /scripts/backup/config_backup.sh
+
+backup-images:
+    @echo "Backing up container images..."
+    ./scripts/backup/image_backup.sh
+
+backup-all: backup-database backup-config backup-images
+    @echo "All backups completed successfully"
+
+recover-database BACKUP_FILE:
+    @echo "Recovering database from {{BACKUP_FILE}}..."
+    docker compose run --rm app /scripts/recovery/db_full_recovery.sh {{BACKUP_FILE}}
+
+recover-database-point-in-time BACKUP_FILE TIMESTAMP:
+    @echo "Recovering database to {{TIMESTAMP}}..."
+    docker compose run --rm app /scripts/recovery/db_point_in_time_recovery.sh {{BACKUP_FILE}} "{{TIMESTAMP}}"
+
+recover-config CONFIG_BACKUP:
+    @echo "Recovering configuration from {{CONFIG_BACKUP}}..."
+    docker compose run --rm app /scripts/recovery/config_recovery.sh {{CONFIG_BACKUP}}
+
+recover-image IMAGE_BACKUP:
+    @echo "Recovering image from {{IMAGE_BACKUP}}..."
+    ./scripts/recovery/image_recovery.sh {{IMAGE_BACKUP}}
+
+validate-backups:
+    @echo "Validating backups..."
+    docker compose run --rm app /scripts/validation/backup_validation.sh
+
+# Composability testing
+test-composability:
+    @echo "Running composability validation tests..."
+    docker compose run --rm app /tests/composability/validate_composability.sh
+
 build-prod:
     @echo "Building production Docker image..."
     docker compose build app_prod
