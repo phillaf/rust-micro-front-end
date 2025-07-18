@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::database::mock::MockUserDatabase;
-    use crate::router::create_app;
     use crate::router::AppState;
     use crate::template::TemplateService;
     use crate::metrics::AppMetrics;

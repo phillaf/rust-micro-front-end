@@ -28,6 +28,9 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "mysql", "chrono
 # Templating Engine - Lightweight, Jinja2-compatible runtime templating
 minijinja = { version = "2.10.2", features = ["loader"] }
 
+# HTTP Client/Server - Low-level HTTP implementation
+hyper = { version = "1.0", features = ["full"] }
+
 # Serialization - JSON serialization/deserialization for APIs
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -48,7 +51,6 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 prometheus = "0.14"
 
 # HTTP utilities
-hyper = { version = "1.4.1", features = ["full"] }
 tower = "0.5"
 tower-http = { version = "0.6.6", features = ["cors", "compression-gzip", "compression-br", "limit", "trace", "timeout", "set-header"] }
 

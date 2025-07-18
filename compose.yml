@@ -1,6 +1,9 @@
 services:
+  # Development service - used for active development with hot reloading
   app:
-    build: .
+    build: 
+      context: .
+      target: dev
     user: "${UID:-1000}:${GID:-1000}"
     ports:
       - "80:80"
@@ -15,6 +18,41 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    # Use specific profile to enable this service only in development
+    profiles: ["dev"]
+
+  # Production service - optimized for performance and security
+  app_prod:
+    build:
+      context: .
+      target: production
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    # No volumes needed in production
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # Use specific profile to enable this service only in production
+    profiles: ["prod"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   mysql:
     image: mysql:8.0
@@ -30,6 +68,25 @@ services:
       retries: 10
       interval: 5s
       start_period: 30s
+
+  # Nginx service for reverse proxy, SSL termination, and static file serving
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/www:/usr/share/nginx/html:ro
+    depends_on:
+      - app_prod
+    profiles: ["prod"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   cargo_cache:

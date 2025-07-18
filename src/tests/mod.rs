@@ -2,9 +2,11 @@
 //! 
 //! This module aggregates all the unit and integration tests for the application.
 
+mod benchmark_tests;
 mod database_tests;
 mod errors_tests;
 mod handler_tests;
+mod jwt_e2e_tests;
 mod logging_tests;
 mod metrics_tests;
 mod middleware_tests;

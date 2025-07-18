@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /display/
+Disallow: /edit/
+Disallow: /api/
+Disallow: /health
+Disallow: /metrics
+
+Sitemap: https://example.com/sitemap.xml

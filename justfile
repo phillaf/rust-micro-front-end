@@ -149,3 +149,42 @@ profile:
 lighthouse:
     @echo "Running Lighthouse performance audit..."
     # docker run --rm --cap-add=SYS_ADMIN ghcr.io/puppeteer/puppeteer lighthouse http://localhost --output json
+
+test-module module_name:
+    @echo "Running specific test module: {{module_name}}..."
+    docker compose run --rm app cargo test {{module_name}} -- --test-threads=1
+
+# Micro Front-End Component Testing
+test-components:
+    @echo "Running component isolation tests..."
+    docker compose run --rm app /app/scripts/run_component_tests.sh
+
+test-components-dev:
+    @echo "Running component tests with development server..."
+    @echo "Make sure the development server is running with 'just dev' in another terminal"
+    TEST_SERVER_URL=http://app:3000 ./scripts/run_component_tests.sh
+
+# Production commands
+generate-ssl:
+    @echo "Generating self-signed SSL certificates for development..."
+    ./scripts/generate_ssl_cert.sh
+
+build-prod:
+    @echo "Building production Docker image..."
+    docker compose build app_prod
+
+prod-up:
+    @echo "Starting production environment..."
+    docker compose --profile prod up -d
+
+prod-down:
+    @echo "Stopping production environment..."
+    docker compose --profile prod down
+
+prod-logs:
+    @echo "Viewing production logs..."
+    docker compose --profile prod logs -f
+
+prod-migrate:
+    @echo "Running database migrations in production environment..."
+    docker compose --profile prod run --rm app_prod /usr/local/bin/migrate
