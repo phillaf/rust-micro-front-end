@@ -17,8 +17,8 @@ export NODE_OPTIONS="--unhandled-rejections=strict"
 # Generate a test JWT token if needed
 if [ -z "$TEST_JWT_TOKEN" ]; then
     echo "Generating test JWT token..."
-    if [ -f "/app/scripts/jwt_test_helper.sh" ]; then
-        export TEST_JWT_TOKEN=$(bash /app/scripts/jwt_test_helper.sh generate test_user)
+    if [ -f "/usr/src/myapp/scripts/jwt_test_helper.sh" ]; then
+        export TEST_JWT_TOKEN=$(bash /usr/src/myapp/scripts/jwt_test_helper.sh generate test_user)
     else
         echo "Warning: jwt_test_helper.sh not found, tests requiring JWT may fail"
         export TEST_JWT_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXIiLCJpc3MiOiJ0ZXN0X2lzc3VlciIsImF1ZCI6InRlc3RfYXVkaWVuY2UiLCJleHAiOjk5OTk5OTk5OTl9.signature"

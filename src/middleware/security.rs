@@ -4,37 +4,22 @@ use axum::{
     middleware::Next,
 };
 
-pub async fn security_headers_middleware(
-    request: Request<Body>,
-    next: Next,
-) -> Result<Response<Body>, StatusCode> {
+pub async fn security_headers_middleware(request: Request<Body>, next: Next) -> Result<Response<Body>, StatusCode> {
     let uri_path = request.uri().path().to_string();
     let mut response = next.run(request).await;
-    
+
     let headers = response.headers_mut();
-    
+
     // Security headers for Lighthouse 100/100 and security best practices
-    headers.insert(
-        "X-Content-Type-Options",
-        HeaderValue::from_static("nosniff"),
-    );
-    headers.insert(
-        "X-Frame-Options",
-        HeaderValue::from_static("DENY"),
-    );
-    headers.insert(
-        "X-XSS-Protection",
-        HeaderValue::from_static("1; mode=block"),
-    );
-    headers.insert(
-        "Referrer-Policy",
-        HeaderValue::from_static("strict-origin-when-cross-origin"),
-    );
+    headers.insert("X-Content-Type-Options", HeaderValue::from_static("nosniff"));
+    headers.insert("X-Frame-Options", HeaderValue::from_static("DENY"));
+    headers.insert("X-XSS-Protection", HeaderValue::from_static("1; mode=block"));
+    headers.insert("Referrer-Policy", HeaderValue::from_static("strict-origin-when-cross-origin"));
     headers.insert(
         "Permissions-Policy",
         HeaderValue::from_static("geolocation=(), microphone=(), camera=()"),
     );
-    
+
     // Strict Content Security Policy for inline scripts (as required by architecture)
     headers.insert(
         "Content-Security-Policy",
@@ -47,10 +32,10 @@ pub async fn security_headers_middleware(
              connect-src 'self'; \
              frame-ancestors 'none'; \
              base-uri 'self'; \
-             form-action 'self'"
+             form-action 'self'",
         ),
     );
-    
+
     // Cache control headers for performance
     if let Some(content_type) = headers.get(header::CONTENT_TYPE) {
         if let Ok(content_type_str) = content_type.to_str() {
@@ -62,14 +47,8 @@ pub async fn security_headers_middleware(
                         header::CACHE_CONTROL,
                         HeaderValue::from_static("no-cache, no-store, must-revalidate"),
                     );
-                    headers.insert(
-                        header::PRAGMA,
-                        HeaderValue::from_static("no-cache"),
-                    );
-                    headers.insert(
-                        header::EXPIRES,
-                        HeaderValue::from_static("0"),
-                    );
+                    headers.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
+                    headers.insert(header::EXPIRES, HeaderValue::from_static("0"));
                 } else {
                     // Public HTML pages - cache but revalidate
                     headers.insert(
@@ -77,9 +56,10 @@ pub async fn security_headers_middleware(
                         HeaderValue::from_static("public, max-age=300, must-revalidate"),
                     );
                 }
-            } else if content_type_str.starts_with("text/css") 
-                || content_type_str.starts_with("application/javascript") 
-                || content_type_str.starts_with("image/") {
+            } else if content_type_str.starts_with("text/css")
+                || content_type_str.starts_with("application/javascript")
+                || content_type_str.starts_with("image/")
+            {
                 // Static assets - longer cache
                 headers.insert(
                     header::CACHE_CONTROL,
@@ -88,7 +68,7 @@ pub async fn security_headers_middleware(
             }
         }
     }
-    
+
     Ok(response)
 }
 

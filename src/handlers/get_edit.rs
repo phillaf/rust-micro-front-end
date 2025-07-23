@@ -1,8 +1,4 @@
-use axum::{
-    extract::State,
-    response::Html,
-    Extension,
-};
+use axum::{extract::State, response::Html, Extension};
 use minijinja::context;
 use std::sync::Arc;
 use tracing::info;
@@ -17,7 +13,7 @@ pub async fn get_edit(
     Extension(username): Extension<String>,
 ) -> Result<Html<String>, AppError> {
     info!("CMS request for username: {}", username);
-    
+
     // Validate username from JWT token
     let validated_username = ValidatedUsername::new(username)?;
     
@@ -30,16 +26,16 @@ pub async fn get_edit(
             } else {
                 user.display_name
             }
-        },
+        }
         Ok(None) => {
             // If user doesn't exist in database yet, use username as default
             validated_username.as_str().to_string()
-        },
+        }
         Err(e) => {
             return Err(AppError::database_error(format!("Failed to get user: {}", e)));
         }
     };
-    
+
     // Render the edit template
     let html = app_state.template_service.render("edit.html", context! {
         username => validated_username.as_str(),
@@ -48,6 +44,6 @@ pub async fn get_edit(
         description => format!("Content management system to edit display name for user {}", validated_username.as_str()),
         keywords => "edit, cms, content management, display name, profile"
     })?;
-    
+
     Ok(Html(html))
 }

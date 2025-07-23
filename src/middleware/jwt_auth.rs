@@ -35,13 +35,18 @@ impl std::fmt::Debug for JwtConfig {
 
 impl JwtConfig {
     pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
-        let public_key_pem = env::var("JWT_PUBLIC_KEY").map_err(|_| "JWT_PUBLIC_KEY environment variable not set")?;
+        let mut public_key_pem = env::var("JWT_PUBLIC_KEY").map_err(|_| "JWT_PUBLIC_KEY environment variable not set")?;
+        
+        // Handle escaped newlines in the public key
+        if public_key_pem.contains("\\n") {
+            public_key_pem = public_key_pem.replace("\\n", "\n");
+        }
 
         let algorithm = env::var("JWT_ALGORITHM").unwrap_or_else(|_| "RS256".to_string());
 
         let audience = env::var("JWT_AUDIENCE").unwrap_or_else(|_| "micro-frontend-service".to_string());
 
-        let issuer = env::var("JWT_ISSUER").unwrap_or_else(|_| "your-auth-service".to_string());
+        let issuer = env::var("JWT_ISSUER").unwrap_or_else(|_| "test-auth-service".to_string());
 
         let public_key = DecodingKey::from_rsa_pem(public_key_pem.as_bytes())
             .map_err(|e| format!("Failed to parse JWT public key: {e}"))?;
@@ -95,22 +100,14 @@ pub async fn jwt_auth_middleware(mut request: Request, next: Next) -> Result<Res
 
 fn extract_jwt_token(request: &Request) -> Option<String> {
     // 1. Check Authorization header (Bearer token)
-    if let Some(auth_header) = request
-        .headers()
-        .get(AUTHORIZATION)
-        .and_then(|header| header.to_str().ok())
-    {
+    if let Some(auth_header) = request.headers().get(AUTHORIZATION).and_then(|header| header.to_str().ok()) {
         if let Some(token) = auth_header.strip_prefix("Bearer ") {
             return Some(token.to_string());
         }
     }
 
     // 2. Check for jwt_token cookie
-    if let Some(cookie_header) = request
-        .headers()
-        .get(COOKIE)
-        .and_then(|header| header.to_str().ok())
-    {
+    if let Some(cookie_header) = request.headers().get(COOKIE).and_then(|header| header.to_str().ok()) {
         for cookie in cookie_header.split(';') {
             let cookie = cookie.trim();
             if let Some(token) = cookie.strip_prefix("jwt_token=") {

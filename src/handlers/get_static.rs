@@ -36,7 +36,7 @@ pub async fn get_manifest() -> impl IntoResponse {
 /// GET /robots.txt - Robots.txt for SEO
 pub async fn get_robots_txt() -> impl IntoResponse {
     let robots = "User-agent: *\nAllow: /\n\nSitemap: https://example.com/sitemap.xml";
-    
+
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "text/plain")
@@ -65,7 +65,7 @@ pub async fn get_sitemap() -> impl IntoResponse {
         <priority>0.9</priority>
     </url>
 </urlset>"#;
-    
+
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/xml")

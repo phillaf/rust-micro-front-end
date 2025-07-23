@@ -1,7 +1,7 @@
 use axum::{extract::State, response::IntoResponse};
 use prometheus::{
-    register_histogram_vec, register_int_counter_vec, register_int_gauge, Encoder, HistogramVec,
-    IntCounterVec, IntGauge, TextEncoder,
+    register_histogram_vec, register_int_counter_vec, register_int_gauge, Encoder, HistogramVec, IntCounterVec,
+    IntGauge, TextEncoder,
 };
 use std::{sync::Arc, time::Instant};
 
@@ -15,15 +15,15 @@ pub struct AppMetrics {
     pub http_requests_total: IntCounterVec,
     pub http_requests_duration_seconds: HistogramVec,
     pub http_requests_in_flight: IntGauge,
-    
+
     // Authentication metrics
     pub auth_success_total: IntCounterVec,
     pub auth_failure_total: IntCounterVec,
-    
+
     // Database metrics
     pub database_queries_total: IntCounterVec,
     pub database_query_duration_seconds: HistogramVec,
-    
+
     // Application metrics
     pub template_render_duration_seconds: HistogramVec,
     pub cache_hit_total: IntCounterVec,
@@ -33,64 +33,92 @@ pub struct AppMetrics {
 impl AppMetrics {
     #[cfg(test)]
     pub fn new_for_tests() -> Self {
-        use prometheus::{IntCounterVec, IntGauge, HistogramVec};
         use prometheus::opts;
-        
+        use prometheus::{HistogramVec, IntCounterVec, IntGauge};
+
         // In tests, we don't register metrics with the global registry to avoid collisions
         Self {
             http_requests_total: IntCounterVec::new(
                 opts!("http_requests_total", "Total number of HTTP requests"),
-                &["method", "path", "status"]
-            ).unwrap(),
-            
+                &["method", "path", "status"],
+            )
+            .unwrap(),
+
             http_requests_duration_seconds: HistogramVec::new(
-                prometheus::histogram_opts!("http_requests_duration_seconds", "HTTP request duration in seconds", vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]),
-                &["method", "path"]
-            ).unwrap(),
-            
+                prometheus::histogram_opts!(
+                    "http_requests_duration_seconds",
+                    "HTTP request duration in seconds",
+                    vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+                ),
+                &["method", "path"],
+            )
+            .unwrap(),
+
             http_requests_in_flight: IntGauge::new(
-                "http_requests_in_flight", 
-                "Number of HTTP requests currently in flight"
-            ).unwrap(),
-            
+                "http_requests_in_flight",
+                "Number of HTTP requests currently in flight",
+            )
+            .unwrap(),
+
             auth_success_total: IntCounterVec::new(
                 opts!("auth_success_total", "Total number of successful authentication attempts"),
-                &["username"]
-            ).unwrap(),
-            
+                &["username"],
+            )
+            .unwrap(),
+
             auth_failure_total: IntCounterVec::new(
                 opts!("auth_failure_total", "Total number of failed authentication attempts"),
-                &["reason"]
-            ).unwrap(),
-            
+                &["reason"],
+            )
+            .unwrap(),
+
             database_queries_total: IntCounterVec::new(
                 opts!("database_queries_total", "Total number of database queries"),
-                &["operation", "table"]
-            ).unwrap(),
-            
+                &["operation", "table"],
+            )
+            .unwrap(),
+
             database_query_duration_seconds: HistogramVec::new(
-                prometheus::histogram_opts!("database_query_duration_seconds", "Database query duration in seconds", vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]),
-                &["operation", "table"]
-            ).unwrap(),
-            
+                prometheus::histogram_opts!(
+                    "database_query_duration_seconds",
+                    "Database query duration in seconds",
+                    vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]
+                ),
+                &["operation", "table"],
+            )
+            .unwrap(),
+
             template_render_duration_seconds: HistogramVec::new(
-                prometheus::histogram_opts!("template_render_duration_seconds", "Template rendering duration in seconds", vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25]),
-                &["template"]
-            ).unwrap(),
-            
-            cache_hit_total: IntCounterVec::new(
-                opts!("cache_hit_total", "Total number of cache hits"),
-                &["cache"]
-            ).unwrap(),
-            
-            cache_miss_total: IntCounterVec::new(
-                opts!("cache_miss_total", "Total number of cache misses"),
-                &["cache"]
-            ).unwrap(),
+                prometheus::histogram_opts!(
+                    "template_render_duration_seconds",
+                    "Template rendering duration in seconds",
+                    vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25]
+                ),
+                &["template"],
+            )
+            .unwrap(),
+
+            cache_hit_total: IntCounterVec::new(opts!("cache_hit_total", "Total number of cache hits"), &["cache"])
+                .unwrap(),
+
+            cache_miss_total: IntCounterVec::new(opts!("cache_miss_total", "Total number of cache misses"), &["cache"])
+                .unwrap(),
         }
     }
-    
+
+    // For tests, instead of trying to reset the global registry (which is difficult),
+    // let's use a completely separate testing approach for metrics
+    #[cfg(test)]
+    pub fn reset_registry() {
+        // For tests, we won't try to reset the global registry
+        // Instead we'll use the new_for_tests() approach which creates
+        // metrics that aren't registered globally
+    }
+
     pub fn new() -> Self {
+        #[cfg(test)]
+        Self::reset_registry();
+
         // HTTP request metrics
         let http_requests_total = register_int_counter_vec!(
             "http_requests_total",
@@ -107,11 +135,8 @@ impl AppMetrics {
         )
         .unwrap();
 
-        let http_requests_in_flight = register_int_gauge!(
-            "http_requests_in_flight",
-            "Number of HTTP requests currently in flight"
-        )
-        .unwrap();
+        let http_requests_in_flight =
+            register_int_gauge!("http_requests_in_flight", "Number of HTTP requests currently in flight").unwrap();
 
         // Authentication metrics
         let auth_success_total = register_int_counter_vec!(
@@ -153,19 +178,11 @@ impl AppMetrics {
         )
         .unwrap();
 
-        let cache_hit_total = register_int_counter_vec!(
-            "cache_hit_total",
-            "Total number of cache hits",
-            &["cache"]
-        )
-        .unwrap();
+        let cache_hit_total =
+            register_int_counter_vec!("cache_hit_total", "Total number of cache hits", &["cache"]).unwrap();
 
-        let cache_miss_total = register_int_counter_vec!(
-            "cache_miss_total",
-            "Total number of cache misses",
-            &["cache"]
-        )
-        .unwrap();
+        let cache_miss_total =
+            register_int_counter_vec!("cache_miss_total", "Total number of cache misses", &["cache"]).unwrap();
 
         Self {
             http_requests_total,
@@ -204,26 +221,26 @@ pub async fn track_metrics(
 
     // Start timing
     let start = Instant::now();
-    
+
     // Increment in-flight requests
     app_state.metrics.http_requests_in_flight.inc();
-    
+
     // Process the request
     let response = next.run(req).await;
-    
+
     // Decrement in-flight requests
     app_state.metrics.http_requests_in_flight.dec();
-    
+
     // Calculate duration
     let duration = start.elapsed().as_secs_f64();
-    
+
     // Record duration
     app_state
         .metrics
         .http_requests_duration_seconds
         .with_label_values(&[&method, &path])
         .observe(duration);
-    
+
     // Record request count
     let status = response.status().as_u16().to_string();
     app_state
@@ -231,26 +248,23 @@ pub async fn track_metrics(
         .http_requests_total
         .with_label_values(&[&method, &path, &status])
         .inc();
-    
+
     response
 }
 
 /// GET /metrics - Expose Prometheus metrics
 pub async fn get_metrics(_state: State<Arc<AppState>>) -> impl IntoResponse {
     let encoder = TextEncoder::new();
-    
+
     // Gather all metrics
     let metric_families = prometheus::gather();
-    
+
     // Encode metrics into text format
     let mut buffer = Vec::new();
     encoder.encode(&metric_families, &mut buffer).unwrap();
-    
+
     // Return metrics as plain text with correct content type
-    (
-        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4")],
-        buffer
-    )
+    ([(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4")], buffer)
 }
 
 // Helper functions to track template rendering time
@@ -263,31 +277,17 @@ pub fn track_template_rendering(metrics: &AppMetrics, template_name: &str, durat
 
 // Helper function to track cache operations
 pub fn track_cache_hit(metrics: &AppMetrics, cache_name: &str) {
-    metrics
-        .cache_hit_total
-        .with_label_values(&[cache_name])
-        .inc();
+    metrics.cache_hit_total.with_label_values(&[cache_name]).inc();
 }
 
 pub fn track_cache_miss(metrics: &AppMetrics, cache_name: &str) {
-    metrics
-        .cache_miss_total
-        .with_label_values(&[cache_name])
-        .inc();
+    metrics.cache_miss_total.with_label_values(&[cache_name]).inc();
 }
 
 // Helper functions to track database operations
-pub fn track_database_query(
-    metrics: &AppMetrics, 
-    operation: &str, 
-    status: &str, 
-    duration: f64
-) {
-    metrics
-        .database_queries_total
-        .with_label_values(&[operation, status])
-        .inc();
-        
+pub fn track_database_query(metrics: &AppMetrics, operation: &str, status: &str, duration: f64) {
+    metrics.database_queries_total.with_label_values(&[operation, status]).inc();
+
     metrics
         .database_query_duration_seconds
         .with_label_values(&[operation])
@@ -296,15 +296,9 @@ pub fn track_database_query(
 
 // Helper functions to track authentication events
 pub fn track_auth_success(metrics: &AppMetrics, username: &str) {
-    metrics
-        .auth_success_total
-        .with_label_values(&[username])
-        .inc();
+    metrics.auth_success_total.with_label_values(&[username]).inc();
 }
 
 pub fn track_auth_failure(metrics: &AppMetrics, reason: &str) {
-    metrics
-        .auth_failure_total
-        .with_label_values(&[reason])
-        .inc();
+    metrics.auth_failure_total.with_label_values(&[reason]).inc();
 }

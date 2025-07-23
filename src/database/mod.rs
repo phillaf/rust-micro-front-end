@@ -54,7 +54,7 @@ pub async fn create_database_adapter() -> Result<Arc<dyn UserDatabase>> {
             .unwrap_or(300);
 
         let cache_ttl = Duration::from_secs(cache_ttl_seconds);
-        
+
         tracing::info!("Database caching enabled with TTL: {:?}", cache_ttl);
         Ok(Arc::new(cache::CachedUserDatabase::new(base_adapter, cache_ttl, true)))
     } else {

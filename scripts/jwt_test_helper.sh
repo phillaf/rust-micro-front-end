@@ -37,7 +37,7 @@ generate_test_jwt() {
     # Create JWT payload
     local now=$(date +%s)
     local exp=$((now + 3600))  # 1 hour from now
-    local payload='{"sub":"'$username'","iat":'$now',"exp":'$exp',"aud":"micro-frontend-service","iss":"your-auth-service"}'
+    local payload='{"sub":"'$username'","iat":'$now',"exp":'$exp',"aud":"micro-frontend-service","iss":"test-auth-service"}'
     
     # Base64URL encode header and payload
     local header_b64=$(echo -n "$header" | base64 -w 0 | tr '+/' '-_' | tr -d '=')

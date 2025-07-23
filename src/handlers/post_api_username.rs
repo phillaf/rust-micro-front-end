@@ -22,14 +22,22 @@ pub async fn post_api_username(
 ) -> Result<Json<UsernameResponse>, AppError> {
     // Validate username from JWT token
     let validated_username = ValidatedUsername::new(username)?;
-    
+
     // Sanitize and validate display name
     let sanitized_display_name = sanitize_display_name(&payload.display_name);
     let validated_display_name = ValidatedDisplayName::new(sanitized_display_name)?;
 
-    match app_state.database.update_user_display_name(validated_username.as_str(), validated_display_name.as_str()).await {
+    match app_state
+        .database
+        .update_user_display_name(validated_username.as_str(), validated_display_name.as_str())
+        .await
+    {
         Ok(()) => {
-            tracing::info!("Updated display name for '{}' to '{}'", validated_username, validated_display_name);
+            tracing::info!(
+                "Updated display name for '{}' to '{}'",
+                validated_username,
+                validated_display_name
+            );
             Ok(Json(UsernameResponse {
                 username: validated_username.into_string(),
                 display_name: validated_display_name.into_string(),

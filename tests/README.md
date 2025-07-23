@@ -52,16 +52,25 @@ just test-integration
 ### All Tests
 
 ```bash
-# Run unit tests
+# Run all unit tests (one thread at a time)
 just test
+
+# Run all unit tests in parallel (faster, but may have race conditions)
+just test-parallel
 
 # Run integration tests
 just test-integration
+
+# Run component tests
+just test-components
 ```
 
-### Individual Test Suites
+### Individual Test Modules
 
 ```bash
+# Run a specific test module
+just test-module middleware_tests
+
 # MySQL integration tests only
 ./tests/integration/mysql_integration_test.sh
 ```
@@ -88,9 +97,22 @@ When adding new integration tests:
 
 ## Test Environment
 
+### Unit Test Configuration
+
+Unit tests run in the development container with these characteristics:
+
+- Uses the Docker development profile (`--profile dev`)
+- Tests are isolated and don't require external dependencies
+- Mock database is used by default
+- Tests run sequentially with `--test-threads=1` by default
+
+### Integration Test Requirements
+
 Integration tests expect:
 
 - MySQL database running (`just db-up`)
 - Application server running (`just dev`)
 - Environment configured with MySQL adapter (`DATABASE_ADAPTER=mysql`)
 - Standard test dependencies (`curl`, `jq`)
+
+All tests are run within containerized environments to ensure consistency across development and CI/CD pipelines.

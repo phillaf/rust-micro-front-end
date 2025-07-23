@@ -1,5 +1,5 @@
 //! Tests module for the Rust Micro Front-End application.
-//! 
+//!
 //! This module aggregates all the unit and integration tests for the application.
 
 mod benchmark_tests;

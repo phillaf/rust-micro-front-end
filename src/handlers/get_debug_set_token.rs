@@ -17,18 +17,18 @@ pub async fn get_debug_set_token(
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, StatusCode> {
     info!("Debug: Setting JWT token for username: {}", username);
-    
+
     // Use token from query parameter if provided, otherwise generate one
     let token = if let Some(provided_token) = params.get("token") {
         provided_token.clone()
     } else {
         generate_debug_jwt(&username)?
     };
-    
+
     // Create template environment
     let mut env = Environment::new();
     env.set_loader(minijinja::path_loader("templates"));
-    
+
     let template_content = r#"
 <!DOCTYPE html>
 <html lang="en">
@@ -185,14 +185,14 @@ pub async fn get_debug_set_token(
 </body>
 </html>
 "#;
-    
+
     let html = template_content
         .replace("{{ username }}", &username)
         .replace("{{ token }}", &token);
-    
+
     // Build response with cookie header
     let cookie_value = format!("jwt_token={}; Path=/; Max-Age=3600; HttpOnly; SameSite=Lax", token);
-    
+
     Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/html; charset=utf-8")
@@ -203,21 +203,20 @@ pub async fn get_debug_set_token(
 
 fn generate_debug_jwt(username: &str) -> Result<String, StatusCode> {
     use std::process::Command;
-    
+
     // Generate JWT token using the shell script
     let output = Command::new("bash")
         .arg("scripts/jwt_test_helper.sh")
         .arg(username)
         .output()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     if !output.status.success() {
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
-    
-    let output_str = String::from_utf8(output.stdout)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
+    let output_str = String::from_utf8(output.stdout).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     // Extract just the token from the script output
     // The script outputs "Token (copy this):" followed by the token
     for line in output_str.lines() {
@@ -226,6 +225,6 @@ fn generate_debug_jwt(username: &str) -> Result<String, StatusCode> {
             return Ok(line.to_string());
         }
     }
-    
+
     Err(StatusCode::INTERNAL_SERVER_ERROR)
 }

@@ -8,19 +8,19 @@ use uuid::Uuid;
 pub struct RequestContext {
     /// Unique ID for this request (correlation ID)
     pub request_id: String,
-    
+
     /// Username if authenticated
     pub username: Option<String>,
-    
+
     /// Start time for this request
     pub start_time: Instant,
-    
+
     /// Request path
     pub path: String,
-    
+
     /// Request method
     pub method: String,
-    
+
     /// User agent
     pub user_agent: Option<String>,
 }
@@ -38,13 +38,13 @@ impl RequestContext {
             user_agent,
         }
     }
-    
+
     /// Set the authenticated username
     pub fn with_username(mut self, username: Option<String>) -> Self {
         self.username = username;
         self
     }
-    
+
     /// Log request start with context
     pub fn log_request_start(&self) {
         info!(
@@ -56,11 +56,11 @@ impl RequestContext {
             "Request started"
         );
     }
-    
+
     /// Log request completion with duration
     pub fn log_request_completion(&self, status_code: u16) {
         let duration = self.start_time.elapsed();
-        
+
         info!(
             request_id = %self.request_id,
             path = %self.path,
@@ -71,7 +71,7 @@ impl RequestContext {
             "Request completed"
         );
     }
-    
+
     /// Log a database operation with context
     pub fn log_database_operation(&self, operation: &str, success: bool, duration: std::time::Duration) {
         if success {
@@ -90,7 +90,7 @@ impl RequestContext {
             );
         }
     }
-    
+
     /// Log an authentication event with context
     pub fn log_auth_event(&self, success: bool, reason: Option<&str>) {
         if success {
@@ -108,7 +108,7 @@ impl RequestContext {
             );
         }
     }
-    
+
     /// Log an error with context
     pub fn log_error(&self, error: &anyhow::Error) {
         error!(
@@ -130,43 +130,43 @@ pub async fn request_context_middleware(
     // Extract basic request information
     let path = req.uri().path().to_string();
     let method = req.method().to_string();
-    
+
     // Extract optional user agent
     let user_agent = req
         .headers()
         .get(axum::http::header::USER_AGENT)
         .and_then(|h| h.to_str().ok())
         .map(|s| s.to_string());
-    
+
     // Create request context with correlation ID
     let request_ctx = RequestContext::new(path, method, user_agent);
-    
+
     // Log request start
     request_ctx.log_request_start();
-    
+
     // Insert request_id as a header for correlation across services
     if let Ok(header_value) = axum::http::header::HeaderValue::from_str(&request_ctx.request_id) {
         req.headers_mut().insert("X-Request-ID", header_value);
     }
-    
+
     // Process the request
     let start = Instant::now();
     let mut response = next.run(req).await;
     let duration = start.elapsed();
-    
+
     // Add correlation ID to response headers
     if let Ok(header_value) = axum::http::header::HeaderValue::from_str(&request_ctx.request_id) {
         response.headers_mut().insert("X-Request-ID", header_value);
     }
-    
+
     // Log request completion with status code
     let status = response.status().as_u16();
     request_ctx.log_request_completion(status);
-    
+
     // If it's an error response (4xx or 5xx), log more details
     if status >= 400 {
         let level = if status < 500 { "warn" } else { "error" };
-        
+
         warn!(
             request_id = %request_ctx.request_id,
             status_code = status,
@@ -177,7 +177,7 @@ pub async fn request_context_middleware(
             "Request resulted in error response"
         );
     }
-    
+
     response
 }
 
@@ -193,13 +193,13 @@ pub async fn error_logging_middleware(
         .and_then(|h| h.to_str().ok())
         .unwrap_or("unknown")
         .to_string();
-        
+
     let path = req.uri().path().to_string();
     let method = req.method().as_str().to_string();
-    
+
     // Process the request
     let response = next.run(req).await;
-    
+
     // Check if it's an error response
     let status = response.status();
     if status.is_server_error() {
@@ -221,7 +221,7 @@ pub async fn error_logging_middleware(
             "Client error occurred"
         );
     }
-    
+
     response
 }
 
@@ -237,15 +237,14 @@ pub async fn security_event_logging_middleware(
         .and_then(|h| h.to_str().ok())
         .unwrap_or("unknown")
         .to_string();
-        
+
     let path = req.uri().path().to_string();
     let method = req.method().as_str().to_string();
-    
+
     // Check if it's a security-sensitive endpoint
-    let is_auth_endpoint = path.contains("/api/username") || 
-                          path.contains("/debug/set-token") || 
-                          path.contains("/edit");
-                          
+    let is_auth_endpoint =
+        path.contains("/api/username") || path.contains("/debug/set-token") || path.contains("/edit");
+
     if is_auth_endpoint {
         // Log access to security-sensitive endpoints
         info!(
@@ -255,10 +254,10 @@ pub async fn security_event_logging_middleware(
             "Access to security-sensitive endpoint"
         );
     }
-    
+
     // Process the request
     let response = next.run(req).await;
-    
+
     // Check for authentication failures (401)
     if response.status() == axum::http::StatusCode::UNAUTHORIZED {
         warn!(
@@ -268,7 +267,7 @@ pub async fn security_event_logging_middleware(
             "Authentication failure"
         );
     }
-    
+
     // Check for authorization failures (403)
     if response.status() == axum::http::StatusCode::FORBIDDEN {
         warn!(
@@ -278,6 +277,6 @@ pub async fn security_event_logging_middleware(
             "Authorization failure"
         );
     }
-    
+
     response
 }

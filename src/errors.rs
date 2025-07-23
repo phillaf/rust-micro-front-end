@@ -59,6 +59,8 @@ impl AppError {
     pub fn internal_server_error(message: impl Into<String>) -> Self {
         Self::new(ErrorCode::InternalServerError, message)
     }
+    
+    // Authentication errors are handled at middleware level
 }
 
 impl IntoResponse for AppError {

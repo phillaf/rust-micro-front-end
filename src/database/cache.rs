@@ -24,8 +24,11 @@ pub struct CachedUserDatabase {
 impl CachedUserDatabase {
     /// Create a new cached database wrapper
     pub fn new(inner: Arc<dyn UserDatabase>, cache_ttl: Duration, cache_enabled: bool) -> Self {
-        info!("Database cache initialized with TTL: {:?}, enabled: {}", cache_ttl, cache_enabled);
-        
+        info!(
+            "Database cache initialized with TTL: {:?}, enabled: {}",
+            cache_ttl, cache_enabled
+        );
+
         Self {
             inner,
             cache: Arc::new(RwLock::new(HashMap::new())),
@@ -41,7 +44,7 @@ impl CachedUserDatabase {
         }
 
         let cache = self.cache.read().ok()?;
-        
+
         if let Some(entry) = cache.get(username) {
             if entry.expires_at > Instant::now() {
                 debug!("Database cache hit for user: {}", username);
@@ -103,10 +106,8 @@ impl CachedUserDatabase {
     pub fn cache_stats(&self) -> (usize, usize) {
         if let Ok(cache) = self.cache.read() {
             let total_entries = cache.len();
-            let expired_entries = cache.values()
-                .filter(|entry| entry.expires_at <= Instant::now())
-                .count();
-            
+            let expired_entries = cache.values().filter(|entry| entry.expires_at <= Instant::now()).count();
+
             (total_entries, expired_entries)
         } else {
             (0, 0)
@@ -125,20 +126,20 @@ impl UserDatabase for CachedUserDatabase {
         // Cache miss - fetch from database
         debug!("Database cache miss for user: {}", username);
         let user = self.inner.get_user(username).await?;
-        
+
         // Cache the result
         self.cache_user(username, user.clone());
-        
+
         Ok(user)
     }
 
     async fn update_user_display_name(&self, username: &str, display_name: &str) -> Result<()> {
         // Update in database
         self.inner.update_user_display_name(username, display_name).await?;
-        
+
         // Invalidate cache to ensure fresh data on next read
         self.invalidate_user_cache(username);
-        
+
         Ok(())
     }
 

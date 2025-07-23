@@ -92,8 +92,16 @@ pub fn validate_environment() -> Result<()> {
 mod tests {
     use super::*;
     use std::env;
+    use std::sync::Mutex;
+    
+    // Use a mutex to prevent tests from running environment validation concurrently
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
+
     #[test]
     fn test_environment_validation_success() {
+        // Lock environment for this test
+        let _lock = ENV_MUTEX.lock().unwrap();
+        
         // Save original values
         let original_db_adapter = env::var("DATABASE_ADAPTER").ok();
         let original_jwt_key = env::var("JWT_PUBLIC_KEY").ok();
@@ -118,8 +126,12 @@ mod tests {
             env::remove_var("JWT_PUBLIC_KEY");
         }
     }
+    
     #[test]
     fn test_environment_validation_missing_required() {
+        // Lock environment for this test
+        let _lock = ENV_MUTEX.lock().unwrap();
+        
         // Save original values
         let original_db_adapter = env::var("DATABASE_ADAPTER").ok();
         let original_jwt_key = env::var("JWT_PUBLIC_KEY").ok();
@@ -144,8 +156,12 @@ mod tests {
             env::set_var("JWT_PUBLIC_KEY", value);
         }
     }
+    
     #[test]
     fn test_environment_validation_invalid_database_adapter() {
+        // Lock environment for this test
+        let _lock = ENV_MUTEX.lock().unwrap();
+        
         // Save original values
         let original_db_adapter = env::var("DATABASE_ADAPTER").ok();
         let original_jwt_key = env::var("JWT_PUBLIC_KEY").ok();

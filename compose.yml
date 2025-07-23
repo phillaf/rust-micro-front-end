@@ -4,22 +4,20 @@ services:
     build: 
       context: .
       target: dev
-    user: "${UID:-1000}:${GID:-1000}"
+    user: "1000:1000" # Using fixed user ID instead of variables for stability
     ports:
       - "80:80"
     env_file:
       - .env
     volumes:
-      - .:/app:z
-      - cargo_cache:/usr/local/cargo/registry
-      - cargo_bin_cache:/usr/local/cargo/bin
-      - rustup_cache:/usr/local/rustup
-    working_dir: /app
+      - .:/usr/src/myapp:z
+      - ./.cargo-cache:/usr/local/cargo/registry:z
+      - ./.rustup-cache:/usr/local/rustup:z
     depends_on:
       mysql:
         condition: service_healthy
-    # Use specific profile to enable this service only in development
-    profiles: ["dev"]
+    # Available in the default profile for easier development
+    profiles: ["default", "dev"]
 
   # Production service - optimized for performance and security
   app_prod:
@@ -61,7 +59,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - ./.mysql-data:/var/lib/mysql:z
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -88,8 +86,3 @@ services:
       timeout: 10s
       retries: 3
 
-volumes:
-  cargo_cache:
-  cargo_bin_cache:
-  rustup_cache:
-  mysql_data:

@@ -1,4 +1,8 @@
-use axum::{extract::{Query, State}, http::StatusCode, response::Json};
+use axum::{
+    extract::{Query, State},
+    http::StatusCode,
+    response::Json,
+};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, env, sync::Arc, time::Instant};
@@ -50,7 +54,7 @@ pub async fn get_health(
 
     // Calculate uptime using our thread-safe function
     let uptime_seconds = get_uptime_seconds();
-    
+
     // Create checks map
     let mut checks = HashMap::new();
 

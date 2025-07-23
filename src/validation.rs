@@ -6,9 +6,7 @@ use std::sync::OnceLock;
 static USERNAME_REGEX: OnceLock<Regex> = OnceLock::new();
 
 fn get_username_regex() -> &'static Regex {
-    USERNAME_REGEX.get_or_init(|| {
-        Regex::new(r"^[a-zA-Z0-9_-]{3,50}$").expect("Invalid username regex")
-    })
+    USERNAME_REGEX.get_or_init(|| Regex::new(r"^[a-zA-Z0-9_-]{3,50}$").expect("Invalid username regex"))
 }
 
 #[derive(Debug, Clone)]
@@ -75,7 +73,7 @@ pub fn validate_username(username: &str) -> Result<(), AppError> {
 
     if !get_username_regex().is_match(username) {
         return Err(AppError::validation_failed(
-            "Username must contain only alphanumeric characters, underscores, and hyphens"
+            "Username must contain only alphanumeric characters, underscores, and hyphens",
         ));
     }
 
@@ -94,16 +92,15 @@ pub fn validate_display_name(display_name: &str) -> Result<(), AppError> {
 
     // Check for dangerous characters that could be used for XSS
     if display_name.contains('<') || display_name.contains('>') || display_name.contains('&') {
-        return Err(AppError::validation_failed(
-            "Display name cannot contain HTML characters"
-        ));
+        return Err(AppError::validation_failed("Display name cannot contain HTML characters"));
     }
 
     // Check for control characters
-    if display_name.chars().any(|c| c.is_control() && c != '\t' && c != '\n' && c != '\r') {
-        return Err(AppError::validation_failed(
-            "Display name cannot contain control characters"
-        ));
+    if display_name
+        .chars()
+        .any(|c| c.is_control() && c != '\t' && c != '\n' && c != '\r')
+    {
+        return Err(AppError::validation_failed("Display name cannot contain control characters"));
     }
 
     Ok(())

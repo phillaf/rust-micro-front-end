@@ -9,223 +9,185 @@ export GID := `id -g`
 default:
     @just --list
 
+# ===== DEVELOPMENT WORKFLOW =====
+
+# Start an interactive shell in the development container
 bash:
-    docker compose run -it --rm app bash
+    docker compose --profile dev run -it --rm app bash
 
+# Build the application in development mode
 build:
-    docker compose run --rm app cargo build
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo build
 
+# Run the development server
+# Note: This must be started manually due to tool constraints
 dev:
-    docker compose run --rm --service-ports app cargo run --bin rust-micro-front-end
+    docker compose --profile dev run --rm --service-ports --workdir /usr/src/myapp app cargo run --bin rust-micro-front-end
 
-test:
-    @echo "Running test suite in containers..."
-    docker compose run --rm app cargo test -- --test-threads=1
+# Check the code for compilation errors
+check:
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo check
 
-test-parallel:
-    @echo "Running test suite in containers (parallel)..."
-    docker compose run --rm app cargo test
+# Format code using rustfmt
+format:
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo fmt
 
-test-unit:
-    @echo "Running unit tests..."
-    # docker run --rm -v $(pwd):/workspace rust:1.75 cargo test --lib
+# Lint code using clippy
+lint:
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo clippy
 
-test-integration:
-    @echo "Running integration tests..."
-    ./tests/integration/mysql_integration_test.sh
+# Clean build artifacts
+clean:
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo clean
 
-test-jwt:
-    @echo "Running JWT authentication tests..."
-    ./tests/integration/jwt_test.sh
+# Fix permission issues with target directory
+fix-permissions:
+    @echo "Fixing permissions on target directory..."
+    sudo chown -R ${UID}:${GID} target/ || { echo "Failed to fix permissions"; exit 1; }
 
-# IDE tools
+# Initialize cargo cache with correct permissions
+init-cargo-cache:
+    @echo "Initializing cargo caches with correct permissions..."
+    docker compose --profile dev run --rm --user root app chown -R ${UID}:${GID} /usr/local/cargo || true
+    docker compose --profile dev run --rm --user root app chown -R ${UID}:${GID} /usr/local/rustup || true
 
-# IDE support commands (runs once to configure local development)
-setup-ide:
-    rustup component add rust-analyzer rust-src
+# Nuclear clean - removes target directory entirely and recreates with correct permissions
+clean-nuclear:
+    @echo "Performing nuclear clean..."
+    sudo rm -rf target/
+    just init-cargo-cache
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo check > /dev/null
 
-# IDE support - generate build data for rust-analyzer
-build-data:
-    docker compose run --rm app cargo check --message-format=json > /dev/null
+# ===== DATABASE OPERATIONS =====
 
-# Complete IDE setup including build data
-setup-ide-complete:
-    rustup component add rust-analyzer rust-src
-    just build-data
-
-# Database operations
+# Start the development database
 db-up:
     @echo "Starting MySQL database..."
-    docker compose up -d mysql
+    docker compose up -d mysql || { echo "Failed to start MySQL"; exit 1; }
     @echo "Waiting for MySQL to be ready..."
-    docker compose exec mysql bash -c 'until mysqladmin ping -h localhost --silent; do sleep 1; done'
-    @echo "MySQL is ready!"
+    docker compose exec mysql bash -c 'until mysqladmin ping -h localhost --silent; do sleep 1; done' || { echo "MySQL startup failed"; exit 1; }
+    @echo "MySQL database is ready!"
 
+# Run database migrations
 migrate:
     @echo "Running database migrations..."
-    docker compose run --rm app cargo run --bin migrate
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo run --bin migrate || { echo "Migration failed"; exit 1; }
 
-migrate-reset:
-    @echo "Resetting database and running all migrations..."
-    # docker-compose exec app sqlx database reset
-
-seed:
-    @echo "Seeding database with test data..."
-    # docker-compose exec app cargo run --bin seed
-
+# Access database shell
 db-shell:
     @echo "Accessing database shell..."
     docker compose exec mysql bash -c 'mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
 
-# Code quality
-format:
-    docker compose run --rm app cargo fmt
+# ===== TESTING =====
 
-lint:
-    docker compose run --rm app cargo clippy
+# Run all tests
+test:
+    @echo "Running test suite in containers..."
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo test -- --test-threads=1 || { echo "Test execution failed"; exit 1; }
 
-check:
-    docker compose run --rm app cargo check
+# Run all tests in parallel (faster but may have race conditions)
+test-parallel:
+    @echo "Running test suite in parallel..."
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo test
 
-audit:
-    # docker compose run --rm app cargo audit
-
-# Development utilities
-logs:
-    @echo "Viewing application logs..."
-    # docker-compose logs -f app
-
-logs-db:
-    @echo "Viewing database logs..."
-    # docker-compose logs -f mysql
-
-logs-nginx:
-    @echo "Viewing nginx logs..."
-    # docker-compose logs -f nginx
-
-clean:
-    docker compose run --rm app cargo clean
-
-# Fix permission issues with target directory (run this if you get permission errors)
-fix-permissions:
-    sudo chown -R ${UID}:${GID} target/ || true
-
-# Initialize cargo and rustup cache volumes with correct permissions
-init-cargo-cache:
-    @echo "Initializing cargo and rustup caches with correct permissions..."
-    docker compose run --rm --user root app chown -R ${UID}:${GID} /usr/local/cargo || true
-    docker compose run --rm --user root app chown -R ${UID}:${GID} /usr/local/rustup || true
-    @echo "Cargo and rustup caches initialized"
-
-# Nuclear clean - removes target directory entirely and recreates with correct permissions
-clean-nuclear:
-    sudo rm -rf target/
-    just init-cargo-cache
-    docker compose run --rm app cargo check > /dev/null
-
-reset:
-    @echo "Nuclear reset - rebuilding everything..."
-    # docker-compose down --volumes --rmi all
-    # docker system prune -f
-
-# JWT testing utilities
-jwt-generate:
-    @echo "Generating test JWT tokens..."
-    # docker run --rm -v $(pwd)/scripts:/scripts node:18 node /scripts/generate-jwt.js
-
-jwt-validate:
-    @echo "Validating JWT token format..."
-    # docker run --rm -v $(pwd)/scripts:/scripts node:18 node /scripts/validate-jwt.js
-
-# Performance and monitoring
-benchmark:
-    @echo "Running performance benchmarks..."
-    # docker run --rm -v $(pwd):/workspace --user ${UID}:${GID} rust:1.75 cargo bench
-
-profile:
-    @echo "Profiling application performance..."
-    # docker run --rm -v $(pwd):/workspace --user ${UID}:${GID} rust:1.75 cargo flamegraph
-
-lighthouse:
-    @echo "Running Lighthouse performance audit..."
-    # docker run --rm --cap-add=SYS_ADMIN ghcr.io/puppeteer/puppeteer lighthouse http://localhost --output json
-
+# Run a specific test module
 test-module module_name:
-    @echo "Running specific test module: {{module_name}}..."
-    docker compose run --rm app cargo test {{module_name}} -- --test-threads=1
+    @echo "Running test module: {{module_name}}..."
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo test {{module_name}} -- --test-threads=1
 
-# Micro Front-End Component Testing
+# Test JWT authentication with helper script
+test-jwt-auth:
+    @echo "Running JWT authentication tests with helper script..."
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app /usr/src/myapp/scripts/jwt_test_helper.sh
+
+
+
+# Check container user and environment
+check-container-user:
+    @echo "Checking container user and environment..."
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app bash -c "id && whoami && cat /etc/passwd | grep developer && echo 'ENV: JWT_PUBLIC_KEY exists: ' && [ -n \"$$JWT_PUBLIC_KEY\" ] && echo 'Yes' || echo 'No' && env | grep JWT"
+
+# Set up JWT environment
+setup-jwt:
+    @echo "Setting up JWT environment..."
+    ./scripts/generate_jwt_keys.sh
+    ./scripts/update_jwt_env.sh
+
+# Complete environment setup
+setup:
+    @echo "Setting up complete development environment..."
+    just setup-jwt
+    just init-cargo-cache
+    @echo "Building Docker containers..."
+    docker compose --profile dev build
+    @echo "Starting database..."
+    just db-up
+    @echo "Running migrations..."
+    just migrate
+    @echo "Setup complete! You can now run 'just dev' to start the development server."
+
+# Run component tests
 test-components:
-    @echo "Running component isolation tests..."
-    docker compose run --rm app /app/scripts/run_component_tests.sh
+    @echo "Running component tests..."
+    docker compose --profile dev run --rm app /usr/src/myapp/scripts/run_component_tests.sh
 
+# Run component tests against development server
 test-components-dev:
-    @echo "Running component tests with development server..."
+    @echo "Running component tests against development server..."
     @echo "Make sure the development server is running with 'just dev' in another terminal"
     TEST_SERVER_URL=http://app:3000 ./scripts/run_component_tests.sh
 
-# Production commands
-generate-ssl:
-    @echo "Generating self-signed SSL certificates for development..."
-    ./scripts/generate_ssl_cert.sh
+# Run integration tests
+test-integration:
+    @echo "Running integration tests..."
+    ./tests/integration/mysql_integration_test.sh
 
-# Backup and recovery commands
-backup-database:
-    @echo "Backing up database..."
-    docker compose run --rm app /scripts/backup/db_full_backup.sh
+# ===== IDE SETUP =====
 
-backup-config:
-    @echo "Backing up configuration..."
-    docker compose run --rm app /scripts/backup/config_backup.sh
+# Set up IDE for Rust development
+setup-ide:
+    @echo "Setting up IDE for Rust development..."
+    rustup component add rust-analyzer rust-src
 
-backup-images:
-    @echo "Backing up container images..."
-    ./scripts/backup/image_backup.sh
+# Generate build data for rust-analyzer
+build-data:
+    @echo "Generating build data for rust-analyzer..."
+    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo check --message-format=json > /dev/null
 
-backup-all: backup-database backup-config backup-images
-    @echo "All backups completed successfully"
+# Complete IDE setup with build data
+setup-ide-complete:
+    @echo "Setting up IDE with build data..."
+    rustup component add rust-analyzer rust-src
+    just build-data
 
-recover-database BACKUP_FILE:
-    @echo "Recovering database from {{BACKUP_FILE}}..."
-    docker compose run --rm app /scripts/recovery/db_full_recovery.sh {{BACKUP_FILE}}
+# ===== PRODUCTION =====
 
-recover-database-point-in-time BACKUP_FILE TIMESTAMP:
-    @echo "Recovering database to {{TIMESTAMP}}..."
-    docker compose run --rm app /scripts/recovery/db_point_in_time_recovery.sh {{BACKUP_FILE}} "{{TIMESTAMP}}"
-
-recover-config CONFIG_BACKUP:
-    @echo "Recovering configuration from {{CONFIG_BACKUP}}..."
-    docker compose run --rm app /scripts/recovery/config_recovery.sh {{CONFIG_BACKUP}}
-
-recover-image IMAGE_BACKUP:
-    @echo "Recovering image from {{IMAGE_BACKUP}}..."
-    ./scripts/recovery/image_recovery.sh {{IMAGE_BACKUP}}
-
-validate-backups:
-    @echo "Validating backups..."
-    docker compose run --rm app /scripts/validation/backup_validation.sh
-
-# Composability testing
-test-composability:
-    @echo "Running composability validation tests..."
-    docker compose run --rm app /tests/composability/validate_composability.sh
-
+# Build production Docker image
 build-prod:
     @echo "Building production Docker image..."
     docker compose build app_prod
 
+# Start production environment
 prod-up:
     @echo "Starting production environment..."
-    docker compose --profile prod up -d
+    docker compose --profile prod up -d || { echo "Failed to start production environment"; exit 1; }
 
+# Stop production environment
 prod-down:
     @echo "Stopping production environment..."
     docker compose --profile prod down
 
+# View production logs
 prod-logs:
     @echo "Viewing production logs..."
     docker compose --profile prod logs -f
 
+# Run migrations in production environment
 prod-migrate:
-    @echo "Running database migrations in production environment..."
-    docker compose --profile prod run --rm app_prod /usr/local/bin/migrate
+    @echo "Running migrations in production environment..."
+    docker compose --profile prod run --rm app_prod /usr/local/bin/migrate || { echo "Production migration failed"; exit 1; }
+
+# Generate self-signed SSL certificates
+generate-ssl:
+    @echo "Generating self-signed SSL certificates..."
+    ./scripts/generate_ssl_cert.sh

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use tracing::{info, error, warn};
+    use tracing::{error, info, warn};
     use tracing_subscriber::fmt::format::FmtSpan;
 
     #[test]
@@ -19,7 +19,7 @@ mod tests {
         info!("This is an info log");
         warn!("This is a warning log");
         error!("This is an error log");
-        
+
         // We can't easily assert on the output since it goes to stdout/stderr,
         // but at least we can verify the code doesn't panic
     }
@@ -33,7 +33,7 @@ mod tests {
             status = "success",
             "User logged in successfully"
         );
-        
+
         // Again, we can't easily assert on the output,
         // but this verifies the syntax works
     }

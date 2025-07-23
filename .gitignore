@@ -26,6 +26,12 @@ scripts/jwt_public_key.pem
 **/*.tmp
 **/*.temp
 
+# Docker local volume directories
+.cargo-cache/
+.cargo-bin-cache/
+.rustup-cache/
+.mysql-data/
+
 # RustRover
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

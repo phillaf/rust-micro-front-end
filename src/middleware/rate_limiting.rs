@@ -69,10 +69,7 @@ pub async fn rate_limiting_middleware(request: Request, next: Next) -> Result<Re
         warn!("Rate limit exceeded for IP: {}", client_ip);
         let mut response = Response::new(Body::from("Rate limit exceeded"));
         *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
-        response.headers_mut().insert(
-            "Retry-After",
-            HeaderValue::from_static("60"),
-        );
+        response.headers_mut().insert("Retry-After", HeaderValue::from_static("60"));
         return Ok(response);
     }
 

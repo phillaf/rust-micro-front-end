@@ -30,6 +30,8 @@ minijinja = { version = "2.10.2", features = ["loader"] }
 
 # HTTP Client/Server - Low-level HTTP implementation
 hyper = { version = "1.0", features = ["full"] }
+hyper-util = { version = "0.1", features = ["client", "server"] }
+bytes = "1.0"
 
 # Serialization - JSON serialization/deserialization for APIs
 serde = { version = "1.0", features = ["derive"] }

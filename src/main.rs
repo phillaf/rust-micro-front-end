@@ -12,9 +12,9 @@ mod metrics;
 mod middleware;
 mod router;
 mod template;
-mod validation;
 #[cfg(test)]
 mod tests;
+mod validation;
 
 use config::validate_environment;
 use database::create_database_adapter;
