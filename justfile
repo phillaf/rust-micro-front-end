@@ -17,28 +17,28 @@ bash:
 
 # Build the application in development mode
 build:
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo build
+    docker compose --profile dev run --rm app cargo build
 
 # Run the development server
 # Note: This must be started manually due to tool constraints
 dev:
-    docker compose --profile dev run --rm --service-ports --workdir /usr/src/myapp app cargo run --bin rust-micro-front-end
+    docker compose --profile dev run --rm --service-ports app cargo run --bin rust-micro-front-end
 
 # Check the code for compilation errors
 check:
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo check
+    docker compose --profile dev run --rm app cargo check
 
 # Format code using rustfmt
 format:
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo fmt
+    docker compose --profile dev run --rm app cargo fmt
 
 # Lint code using clippy
 lint:
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo clippy
+    docker compose --profile dev run --rm app cargo clippy
 
 # Clean build artifacts
 clean:
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo clean
+    docker compose --profile dev run --rm app cargo clean
 
 # Fix permission issues with target directory
 fix-permissions:
@@ -56,7 +56,7 @@ clean-nuclear:
     @echo "Performing nuclear clean..."
     sudo rm -rf target/
     just init-cargo-cache
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo check > /dev/null
+    docker compose --profile dev run --rm app cargo check > /dev/null
 
 # ===== DATABASE OPERATIONS =====
 
@@ -71,41 +71,62 @@ db-up:
 # Run database migrations
 migrate:
     @echo "Running database migrations..."
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo run --bin migrate || { echo "Migration failed"; exit 1; }
+    docker compose --profile dev run --rm app cargo run --bin migrate || { echo "Migration failed"; exit 1; }
 
 # Access database shell
 db-shell:
     @echo "Accessing database shell..."
     docker compose exec mysql bash -c 'mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
 
+# Check if database is seeded
+db-check-seeding:
+    @echo "Checking database seeding status..."
+    docker compose --profile dev run --rm app cargo run --bin check_seeding
+
 # ===== TESTING =====
 
 # Run all tests
 test:
     @echo "Running test suite in containers..."
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo test -- --test-threads=1 || { echo "Test execution failed"; exit 1; }
+    docker compose --profile dev run --rm app cargo test -- --test-threads=1 || { echo "Test execution failed"; exit 1; }
 
 # Run all tests in parallel (faster but may have race conditions)
 test-parallel:
     @echo "Running test suite in parallel..."
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo test
+    docker compose --profile dev run --rm app cargo test
 
 # Run a specific test module
 test-module module_name:
     @echo "Running test module: {{module_name}}..."
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo test {{module_name}} -- --test-threads=1
+    docker compose --profile dev run --rm app cargo test {{module_name}} -- --test-threads=1
 
 # Test JWT authentication with helper script
 test-jwt-auth:
     @echo "Running JWT authentication tests with helper script..."
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app /usr/src/myapp/scripts/jwt_test_helper.sh
+    docker compose --profile dev run --rm app /usr/src/myapp/scripts/jwt_test_helper.sh
 
+# Reset JWT authentication - provides consistent JWT tokens and debug link
+auth-reset username="testuser":
+    @echo "🔑 Resetting JWT authentication for user: {{username}}..."
+    docker compose --profile dev run --rm app /usr/src/myapp/scripts/jwt_test_helper.sh {{username}}
+    @echo -e "\n✅ Use the URL above to set the JWT token, then you can access:"
+    @echo "   - http://localhost/edit"
+    @echo "   - POST to http://localhost/api/username"
+    @echo "   - Other JWT-protected endpoints"
 
+# Check JWT token validity and inspect contents
+jwt-check token="":
+    @echo "🔍 Checking JWT token validity..."
+    @if [ -n "{{token}}" ]; then \
+        ./scripts/check_jwt.sh "{{token}}"; \
+    else \
+        ./scripts/check_jwt.sh; \
+    fi
 
 # Check container user and environment
 check-container-user:
     @echo "Checking container user and environment..."
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app bash -c "id && whoami && cat /etc/passwd | grep developer && echo 'ENV: JWT_PUBLIC_KEY exists: ' && [ -n \"$$JWT_PUBLIC_KEY\" ] && echo 'Yes' || echo 'No' && env | grep JWT"
+    docker compose --profile dev run --rm app bash -c "id && whoami && cat /etc/passwd | grep developer && echo 'ENV: JWT_PUBLIC_KEY exists: ' && [ -n \"$$JWT_PUBLIC_KEY\" ] && echo 'Yes' || echo 'No' && env | grep JWT"
 
 # Set up JWT environment
 setup-jwt:
@@ -142,6 +163,11 @@ test-integration:
     @echo "Running integration tests..."
     ./tests/integration/mysql_integration_test.sh
 
+# Run JWT cookie expiration test
+test-jwt-cookie-expiry:
+    @echo "Running JWT cookie expiration test..."
+    ./tests/integration/jwt_cookie_expiry_test.sh
+
 # ===== IDE SETUP =====
 
 # Set up IDE for Rust development
@@ -152,7 +178,7 @@ setup-ide:
 # Generate build data for rust-analyzer
 build-data:
     @echo "Generating build data for rust-analyzer..."
-    docker compose --profile dev run --rm --workdir /usr/src/myapp app cargo check --message-format=json > /dev/null
+    docker compose --profile dev run --rm app cargo check --message-format=json > /dev/null
 
 # Complete IDE setup with build data
 setup-ide-complete:

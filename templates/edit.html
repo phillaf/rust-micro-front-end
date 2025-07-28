@@ -30,7 +30,7 @@
                 <small id="display-name-help" class="form-help">This is the name that will be displayed publicly.</small>
             </div>
             
-            <input type="hidden" name="username" value="{{ username }}">
+            <!-- Removed username hidden field - we get username from JWT token now -->
             
             <button type="submit" class="btn" aria-describedby="submit-help">Update Display Name</button>
             <small id="submit-help" class="form-help">Click to save your display name changes.</small>
@@ -102,10 +102,18 @@
                     document.getElementById('display_name').value = data.display_name;
                 })
                 .catch(error => {
-                    // Show error message
+                    // Show error message with debug info
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'error';
-                    errorDiv.textContent = `Error: ${error.message}`;
+                    
+                    // Add more detailed error information for debugging
+                    if (error.name === 'TypeError' && !token) {
+                        errorDiv.innerHTML = `Error: No JWT token found.<br>
+                            <small>Please visit <a href="/debug/set-token/testuser">this link</a> to set a new token.</small>`;
+                    } else {
+                        errorDiv.innerHTML = `Error: ${error.message}<br>
+                            <small>Token length: ${token ? token.length : 0} characters</small>`;
+                    }
                     
                     // Remove existing messages
                     const existingMessages = form.parentElement.querySelectorAll('.success, .error');
@@ -113,6 +121,9 @@
                     
                     // Add error message
                     form.parentElement.insertBefore(errorDiv, form);
+                    
+                    console.error('Form submission error:', error);
+                    console.info('JWT token (first 10 chars):', token ? token.substring(0, 10) + '...' : 'none');
                 })
                 .finally(() => {
                     // Re-enable form

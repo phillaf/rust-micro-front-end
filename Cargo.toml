@@ -22,6 +22,9 @@ async-trait = "0.1"
 # JWT Library - RS256/ES256 signature validation
 jsonwebtoken = "9.0"
 
+# Base64 encoding/decoding
+base64 = { version = "0.21", features = ["std"] }
+
 # Database Layer - Async, compile-time checked SQL queries (no ORM)
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "mysql", "chrono", "uuid", "migrate"] }
 

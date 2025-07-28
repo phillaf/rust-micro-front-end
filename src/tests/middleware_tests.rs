@@ -8,7 +8,7 @@ mod tests {
     };
     use std::str::FromStr;
     use std::sync::Mutex;
-    
+
     // Use a mutex to prevent tests from modifying environment concurrently
     static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
@@ -16,11 +16,11 @@ mod tests {
     fn test_jwt_config_from_env() {
         // Lock environment for this test
         let _lock = ENV_MUTEX.lock().unwrap();
-        
+
         // Save original values
         let original_key = std::env::var("JWT_PUBLIC_KEY").ok();
         let original_algorithm = std::env::var("JWT_ALGORITHM").ok();
-        
+
         // Temporarily set environment variables for the test
         std::env::set_var("JWT_PUBLIC_KEY", 
             "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCozMxH2Mo\nFTOOZPOMzONKZAM0ACvHVyQtP/YO7pXfy9MfTgLNoB7jrOXCCzmkQw7hoKQ4vgdP\nu4p1wJ1XT5jxhJyqn1R1S+2FHvbfmGPk0Pi/ZoIvTU7AEkIGQGwzKj5WczvZyeeT\nYgYTRXdrUH2G9RRGR9SqLtQUzGAw8R2sBG/jihlLHS9Z4/ew8QFRKKHXSGGxgzPr\nv5srFbWOmx8zOe7r+9EJLv9hhRIX8tOyKEzq7kPWGtq3S0RPPKQYgGM+GFuMPR2P\nQCJDUKHcxPDnAjyFDI3MUUlRwb1Jc7j3Tdfpz21+fU1rrFRdo7IbMuLGl7egTwRY\ntQIDAQAB\n-----END PUBLIC KEY-----\n"
@@ -31,7 +31,7 @@ mod tests {
 
         // Check that the config was properly initialized
         assert_eq!(jwt_config.validation.algorithms, vec![jsonwebtoken::Algorithm::RS256]);
-        
+
         // Restore original values
         if let Some(value) = original_key {
             std::env::set_var("JWT_PUBLIC_KEY", value);
@@ -50,10 +50,10 @@ mod tests {
     fn test_jwt_config_debug() {
         // Lock environment for this test
         let _lock = ENV_MUTEX.lock().unwrap();
-        
+
         // Save original values
         let original_key = std::env::var("JWT_PUBLIC_KEY").ok();
-        
+
         // Setup JWT config
         std::env::set_var("JWT_PUBLIC_KEY", 
             "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCozMxH2Mo\nFTOOZPOMzONKZAM0ACvHVyQtP/YO7pXfy9MfTgLNoB7jrOXCCzmkQw7hoKQ4vgdP\nu4p1wJ1XT5jxhJyqn1R1S+2FHvbfmGPk0Pi/ZoIvTU7AEkIGQGwzKj5WczvZyeeT\nYgYTRXdrUH2G9RRGR9SqLtQUzGAw8R2sBG/jihlLHS9Z4/ew8QFRKKHXSGGxgzPr\nv5srFbWOmx8zOe7r+9EJLv9hhRIX8tOyKEzq7kPWGtq3S0RPPKQYgGM+GFuMPR2P\nQCJDUKHcxPDnAjyFDI3MUUlRwb1Jc7j3Tdfpz21+fU1rrFRdo7IbMuLGl7egTwRY\ntQIDAQAB\n-----END PUBLIC KEY-----\n"
@@ -65,7 +65,7 @@ mod tests {
         let debug_output = format!("{:?}", jwt_config);
         assert!(debug_output.contains("<redacted>"));
         assert!(debug_output.contains("JwtConfig"));
-        
+
         // Restore original values
         if let Some(value) = original_key {
             std::env::set_var("JWT_PUBLIC_KEY", value);

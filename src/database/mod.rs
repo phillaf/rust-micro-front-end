@@ -7,6 +7,7 @@ use std::time::Duration;
 pub mod cache;
 pub mod mock;
 pub mod mysql;
+pub mod seeding;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
@@ -21,39 +22,45 @@ pub trait UserDatabase: Send + Sync {
     async fn health_check(&self) -> Result<String>;
 }
 
-pub async fn create_database_adapter() -> Result<Arc<dyn UserDatabase>> {
-    let adapter_type = std::env::var("DATABASE_ADAPTER").unwrap_or_else(|_| "mock".to_string());
+pub struct DatabaseConfig {
+    pub adapter_type: String,
+    pub cache_enabled: bool,
+    pub cache_ttl_seconds: u64,
+}
 
+impl Default for DatabaseConfig {
+    fn default() -> Self {
+        Self {
+            adapter_type: "mock".to_string(),
+            cache_enabled: false,
+            cache_ttl_seconds: 300,
+        }
+    }
+}
+
+// Note: Removed from_env() method to support dependency injection
+
+/// Factory function to create a database adapter based on configuration
+pub async fn create_user_database(config: DatabaseConfig) -> Result<Arc<dyn UserDatabase>> {
     // Create base database adapter
-    let base_adapter: Arc<dyn UserDatabase> = match adapter_type.as_str() {
+    let base_adapter: Arc<dyn UserDatabase> = match config.adapter_type.as_str() {
         "mock" => {
             tracing::info!("Using mock database adapter");
             Arc::new(mock::MockUserDatabase::new())
         }
         "mysql" => {
             tracing::info!("Using MySQL database adapter");
-            let mysql_adapter = mysql::MySqlUserDatabase::new().await?;
+            // Use default MySQL config for now - in a real app, we would pass MySQL-specific config here
+            let mysql_adapter = mysql::MySqlUserDatabase::new_with_config(mysql::MySqlConfig::default()).await?;
             Arc::new(mysql_adapter)
         }
         _ => {
-            anyhow::bail!("Unknown database adapter: {}", adapter_type);
+            anyhow::bail!("Unknown database adapter: {}", config.adapter_type);
         }
     };
 
-    // Check if caching is enabled
-    let cache_enabled = std::env::var("ENABLE_DATABASE_QUERY_CACHING")
-        .unwrap_or_else(|_| "false".to_string())
-        .parse()
-        .unwrap_or(false);
-
-    if cache_enabled {
-        // Parse cache TTL from environment
-        let cache_ttl_seconds = std::env::var("DATABASE_CACHE_TTL_SECONDS")
-            .unwrap_or_else(|_| "300".to_string())
-            .parse()
-            .unwrap_or(300);
-
-        let cache_ttl = Duration::from_secs(cache_ttl_seconds);
+    if config.cache_enabled {
+        let cache_ttl = Duration::from_secs(config.cache_ttl_seconds);
 
         tracing::info!("Database caching enabled with TTL: {:?}", cache_ttl);
         Ok(Arc::new(cache::CachedUserDatabase::new(base_adapter, cache_ttl, true)))
@@ -62,3 +69,6 @@ pub async fn create_database_adapter() -> Result<Arc<dyn UserDatabase>> {
         Ok(base_adapter)
     }
 }
+
+// Removed old convenience function that depended on environment variables
+// Applications should now use the config module's create_database_from_env function instead

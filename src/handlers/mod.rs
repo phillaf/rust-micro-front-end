@@ -1,7 +1,10 @@
 pub mod get_api_username;
+pub mod get_debug_headers;
 pub mod get_debug_set_token;
+pub mod get_debug_validate_token;
 pub mod get_display;
 pub mod get_edit;
 pub mod get_health;
+pub mod get_seed_status;
 pub mod get_static;
 pub mod post_api_username;

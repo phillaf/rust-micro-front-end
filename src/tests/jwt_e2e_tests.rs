@@ -61,31 +61,31 @@ mod tests {
         // Use a mutex to prevent environment variable race conditions
         static ENV_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
         let _lock = ENV_MUTEX.lock().unwrap();
-        
+
         // Store original env vars to restore later (if needed)
         let _original_jwt_key = env::var("JWT_PUBLIC_KEY").ok();
-        
+
         // Generate fresh test keys
         let output = std::process::Command::new("./scripts/generate_jwt_keys.sh")
             .output()
             .expect("Failed to execute generate_jwt_keys.sh");
-            
+
         println!("Key generation output: {}", String::from_utf8_lossy(&output.stdout));
-            
+
         // Read the JWT keys for test
         let public_key = fs::read_to_string("scripts/jwt_public_key.pem").expect("Failed to read JWT public key file");
-        
+
         // Verify key content
         assert!(!public_key.is_empty(), "Public key should not be empty");
         assert!(public_key.contains("BEGIN PUBLIC KEY"), "Public key should contain header");
         assert!(public_key.contains("END PUBLIC KEY"), "Public key should contain footer");
-        
+
         // Set environment variables for JWT validation
         env::set_var("JWT_PUBLIC_KEY", public_key);
         env::set_var("JWT_ALGORITHM", "RS256");
         env::set_var("JWT_AUDIENCE", "micro-frontend-service");
         env::set_var("JWT_ISSUER", "test-auth-service");
-        
+
         // Create app
         create_app(db, template_service)
     }

@@ -46,7 +46,9 @@ impl TemplateService {
                 return Ok(cached_html);
             }
 
-            // Render template
+            // Render template with timing
+            let start = std::time::Instant::now();
+
             let env = self
                 .environment
                 .read()
@@ -54,6 +56,14 @@ impl TemplateService {
 
             let template = env.get_template(template_name)?;
             let html = template.render(context)?;
+
+            // Calculate render duration
+            let duration = start.elapsed().as_secs_f64();
+
+            // Track template rendering metrics
+            if let Some(metrics) = crate::router::get_metrics_instance() {
+                crate::metrics::track_template_rendering(metrics, template_name, duration);
+            }
 
             // Apply minification if enabled
             let final_html = if self.minify_enabled { self.minify_html(&html)? } else { html };
@@ -67,6 +77,9 @@ impl TemplateService {
             // Don't use cache - render fresh every time
             debug!("Rendering fresh template (no cache): {}", template_name);
 
+            // Render template with timing
+            let start = std::time::Instant::now();
+
             let env = self
                 .environment
                 .read()
@@ -74,6 +87,14 @@ impl TemplateService {
 
             let template = env.get_template(template_name)?;
             let html = template.render(context)?;
+
+            // Calculate render duration
+            let duration = start.elapsed().as_secs_f64();
+
+            // Track template rendering metrics
+            if let Some(metrics) = crate::router::get_metrics_instance() {
+                crate::metrics::track_template_rendering(metrics, template_name, duration);
+            }
 
             // Apply minification if enabled
             let final_html = if self.minify_enabled { self.minify_html(&html)? } else { html };

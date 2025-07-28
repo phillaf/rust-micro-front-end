@@ -48,9 +48,25 @@ impl CachedUserDatabase {
         if let Some(entry) = cache.get(username) {
             if entry.expires_at > Instant::now() {
                 debug!("Database cache hit for user: {}", username);
+
+                // Track cache hit metric
+                if let Some(metrics) = crate::router::get_metrics_instance() {
+                    crate::metrics::track_cache_hit(metrics, "user_cache");
+                }
+
                 return Some(entry.user.clone());
             } else {
                 debug!("Database cache entry expired for user: {}", username);
+
+                // Expired entries are effectively misses
+                if let Some(metrics) = crate::router::get_metrics_instance() {
+                    crate::metrics::track_cache_miss(metrics, "user_cache");
+                }
+            }
+        } else {
+            // Track cache miss metric
+            if let Some(metrics) = crate::router::get_metrics_instance() {
+                crate::metrics::track_cache_miss(metrics, "user_cache");
             }
         }
 

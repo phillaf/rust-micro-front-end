@@ -7,7 +7,7 @@ mod tests {
     use axum::http::{Request, StatusCode};
     use std::sync::Arc;
     use tower::ServiceExt; // for oneshot
-    
+
     // Helper function to extract bytes from response body
     async fn extract_body_bytes(body: axum::body::Body) -> Bytes {
         let bytes = axum::body::to_bytes(body, usize::MAX).await.unwrap();
@@ -165,7 +165,7 @@ mod tests {
 
         // Check response status - just verify the endpoint responds with 200 OK
         assert_eq!(response.status(), StatusCode::OK);
-        
+
         // In test mode with non-global metrics, we're not checking the content
     }
 }

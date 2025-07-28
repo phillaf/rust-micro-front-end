@@ -4,19 +4,21 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::errors::AppError;
+use crate::middleware::jwt_auth::Claims;
 use crate::router::AppState;
 use crate::validation::ValidatedUsername;
 
 /// GET /edit - CMS component for editing display names
 pub async fn get_edit(
     State(app_state): State<Arc<AppState>>,
-    Extension(username): Extension<String>,
+    Extension(claims): Extension<Claims>,
 ) -> Result<Html<String>, AppError> {
+    let username = &claims.sub;
     info!("CMS request for username: {}", username);
 
     // Validate username from JWT token
-    let validated_username = ValidatedUsername::new(username)?;
-    
+    let validated_username = ValidatedUsername::new(username.clone())?;
+
     // Get current user data to pre-populate form
     let current_display_name = match app_state.database.get_user(validated_username.as_str()).await {
         Ok(Some(user)) => {

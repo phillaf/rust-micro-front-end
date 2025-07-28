@@ -5,6 +5,7 @@ use tracing::info;
 
 mod config;
 mod database;
+mod env_validation;
 mod errors;
 mod handlers;
 mod logging;
@@ -16,8 +17,8 @@ mod template;
 mod tests;
 mod validation;
 
-use config::validate_environment;
-use database::create_database_adapter;
+use config::database::create_database_from_env;
+use env_validation::validate_environment;
 use router::create_app;
 use template::create_template_service;
 
@@ -44,7 +45,7 @@ async fn main() -> Result<()> {
 
     tracing::subscriber::set_global_default(subscriber)?;
 
-    let database = create_database_adapter().await?;
+    let database = create_database_from_env().await?;
     info!("- Database adapter initialized successfully");
 
     let template_service = create_template_service()?;

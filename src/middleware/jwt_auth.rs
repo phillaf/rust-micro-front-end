@@ -6,11 +6,13 @@ use axum::{
     middleware::Next,
     response::Response,
 };
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine as _;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use std::env;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: String, // Subject (username)
     pub iat: usize,  // Issued at
@@ -35,21 +37,31 @@ impl std::fmt::Debug for JwtConfig {
 
 impl JwtConfig {
     pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
-        let mut public_key_pem = env::var("JWT_PUBLIC_KEY").map_err(|_| "JWT_PUBLIC_KEY environment variable not set")?;
-        
+        let mut public_key_pem =
+            env::var("JWT_PUBLIC_KEY").map_err(|_| "JWT_PUBLIC_KEY environment variable not set")?;
+
+        // Remove surrounding single or double quotes if present
+        if (public_key_pem.starts_with('"') && public_key_pem.ends_with('"'))
+            || (public_key_pem.starts_with('\'') && public_key_pem.ends_with('\''))
+        {
+            public_key_pem = public_key_pem[1..public_key_pem.len() - 1].to_string();
+        }
+
         // Handle escaped newlines in the public key
         if public_key_pem.contains("\\n") {
             public_key_pem = public_key_pem.replace("\\n", "\n");
         }
 
+        tracing::debug!("Processing public key PEM ({} chars): {}", public_key_pem.len(), public_key_pem);
+
         let algorithm = env::var("JWT_ALGORITHM").unwrap_or_else(|_| "RS256".to_string());
-
         let audience = env::var("JWT_AUDIENCE").unwrap_or_else(|_| "micro-frontend-service".to_string());
-
         let issuer = env::var("JWT_ISSUER").unwrap_or_else(|_| "test-auth-service".to_string());
 
         let public_key = DecodingKey::from_rsa_pem(public_key_pem.as_bytes())
             .map_err(|e| format!("Failed to parse JWT public key: {e}"))?;
+
+        tracing::debug!("Successfully parsed RSA public key");
 
         let mut validation = Validation::new(match algorithm.as_str() {
             "RS256" => Algorithm::RS256,
@@ -78,44 +90,138 @@ impl JwtConfig {
 }
 
 pub async fn jwt_auth_middleware(mut request: Request, next: Next) -> Result<Response, StatusCode> {
+    tracing::info!("JWT authentication middleware started");
+
     // Try to extract JWT token from multiple sources
-    let token = extract_jwt_token(&request).ok_or(StatusCode::UNAUTHORIZED)?;
+    let token = extract_jwt_token(&request).ok_or_else(|| {
+        tracing::info!("No JWT token found in request");
+        StatusCode::UNAUTHORIZED
+    })?;
+
+    tracing::info!("JWT token found, length: {}, starting validation", token.len());
 
     // Validate JWT token
-    let jwt_config = JwtConfig::from_env().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let jwt_config = JwtConfig::from_env().map_err(|e| {
+        tracing::error!("JWT config error: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    let token_data = decode::<Claims>(&token, &jwt_config.public_key, &jwt_config.validation)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+    tracing::info!(
+        "JWT config loaded, algorithm: {:?}, leeway: {}",
+        jwt_config.validation.algorithms,
+        jwt_config.validation.leeway
+    );
 
-    // Extract username from the token
-    let username = token_data.claims.sub.clone();
+    match decode::<Claims>(&token, &jwt_config.public_key, &jwt_config.validation) {
+        Ok(token_data) => {
+            tracing::info!(
+                "JWT token validated successfully. Subject: {}, Expiry: {}, Issuer: {:?}",
+                token_data.claims.sub,
+                token_data.claims.exp,
+                token_data.claims.iss
+            );
+            request.extensions_mut().insert(token_data.claims);
+            Ok(next.run(request).await)
+        }
+        Err(e) => {
+            tracing::error!("JWT validation failed: {}", e);
 
-    // Add username to request extensions for handlers to access
-    request.extensions_mut().insert(username);
+            // Log extra information for debugging JWT issues
+            match &e.kind() {
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                    tracing::error!("JWT token has expired");
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidSignature => {
+                    tracing::error!("JWT token has invalid signature - check public key");
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidToken => {
+                    tracing::error!("JWT token is invalid");
+                }
+                other => {
+                    tracing::error!("JWT error kind: {:?}", other);
+                }
+            }
 
-    tracing::info!("JWT authentication successful for user: {}", token_data.claims.sub);
-
-    Ok(next.run(request).await)
+            // We return a basic 401 to avoid leaking too much info to clients
+            Err(StatusCode::UNAUTHORIZED)
+        }
+    }
 }
 
 fn extract_jwt_token(request: &Request) -> Option<String> {
-    // 1. Check Authorization header (Bearer token)
-    if let Some(auth_header) = request.headers().get(AUTHORIZATION).and_then(|header| header.to_str().ok()) {
-        if let Some(token) = auth_header.strip_prefix("Bearer ") {
-            return Some(token.to_string());
-        }
-    }
+    tracing::debug!("Extracting JWT token from request");
 
-    // 2. Check for jwt_token cookie
+    // Define a function to validate token expiry before using it
+    // This is to prevent using expired tokens when multiple tokens are present
+    let is_valid_token = |token: &str| -> bool {
+        // Basic validation: check if it has three parts with dots
+        let parts: Vec<&str> = token.split('.').collect();
+        if parts.len() != 3 {
+            return false;
+        }
+
+        // Try to decode payload part without signature validation
+        if let Ok(payload) = URL_SAFE_NO_PAD.decode(parts[1]) {
+            if let Ok(payload_str) = String::from_utf8(payload) {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&payload_str) {
+                    // Check if token is expired
+                    if let Some(exp) = json.get("exp").and_then(|e| e.as_i64()) {
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs() as i64;
+                        return exp > now;
+                    }
+                }
+            }
+        }
+
+        // If we can't validate expiry, proceed with it anyway
+        true
+    };
+
+    // Collect all tokens from different sources
+    let mut potential_tokens = Vec::new();
+
+    // 1. Check for jwt_token cookie
     if let Some(cookie_header) = request.headers().get(COOKIE).and_then(|header| header.to_str().ok()) {
-        for cookie in cookie_header.split(';') {
-            let cookie = cookie.trim();
-            if let Some(token) = cookie.strip_prefix("jwt_token=") {
-                return Some(token.to_string());
+        tracing::info!("Found cookies header: {}", cookie_header);
+
+        for cookie_part in cookie_header.split(';') {
+            let cookie_part = cookie_part.trim();
+            tracing::debug!("Processing cookie part: {}", cookie_part);
+
+            if let Some(token) = cookie_part.strip_prefix("jwt_token=") {
+                tracing::info!("Found JWT token in cookie, length: {}", token.len());
+                potential_tokens.push(token.to_string());
             }
         }
     }
 
+    // 2. Check Authorization header (Bearer token)
+    if let Some(auth_header) = request.headers().get(AUTHORIZATION).and_then(|header| header.to_str().ok()) {
+        tracing::debug!("Found Authorization header: {}", auth_header);
+        if let Some(token) = auth_header.strip_prefix("Bearer ") {
+            tracing::info!("Found JWT token in Authorization header, length: {}", token.len());
+            potential_tokens.push(token.to_string());
+        }
+    }
+
+    // Return the first valid token, prioritizing non-expired tokens
+    for token in &potential_tokens {
+        if is_valid_token(token) {
+            tracing::info!("Using valid, non-expired token of length {}", token.len());
+            return Some(token.clone());
+        }
+    }
+
+    // If no valid tokens found, return the first token as a fallback
+    if !potential_tokens.is_empty() {
+        tracing::warn!("No valid tokens found, using first token as fallback");
+        return Some(potential_tokens[0].clone());
+    }
+
+    tracing::debug!("No JWT token found in request");
     None
 }
 

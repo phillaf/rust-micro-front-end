@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use crate::errors::AppError;
 use crate::handlers::get_api_username::UsernameResponse;
+use crate::middleware::jwt_auth::Claims;
 use crate::router::AppState;
 use crate::validation::{sanitize_display_name, ValidatedDisplayName, ValidatedUsername};
 
@@ -17,11 +18,12 @@ pub struct UpdateUsernameRequest {
 
 pub async fn post_api_username(
     State(app_state): State<Arc<AppState>>,
-    Extension(username): Extension<String>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<UpdateUsernameRequest>,
 ) -> Result<Json<UsernameResponse>, AppError> {
+    let username = &claims.sub;
     // Validate username from JWT token
-    let validated_username = ValidatedUsername::new(username)?;
+    let validated_username = ValidatedUsername::new(username.clone())?;
 
     // Sanitize and validate display name
     let sanitized_display_name = sanitize_display_name(&payload.display_name);
